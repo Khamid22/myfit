@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "deploy": "npm run build && npx wrangler pages deploy dist --project-name myfit",
+    "deploy": "npm run build && npx wrangler pages deploy dist --project-name myfit --branch main",
     "icons": "pwa-assets-generator"
   },
   "dependencies": {

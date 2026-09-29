@@ -13,7 +13,7 @@ npm run dev        # http://localhost:5173 (food search proxied locally)
 npm test           # domain unit tests
 npm run typecheck
 npm run build
-npm run deploy     # build + deploy to Cloudflare Pages (project "myfit")
+npm run deploy     # build + deploy to Cloudflare Pages → https://myfit-f00.pages.dev
 ```
 
 ## Structure
