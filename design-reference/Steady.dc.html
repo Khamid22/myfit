@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Steady">
+<meta name="theme-color" content="#161826">
+<link rel="stylesheet" href="_ds/nocturne-94675b39-183d-4b76-891c-54b461f2e66d/styles.css">
+<script src="_ds/nocturne-94675b39-183d-4b76-891c-54b461f2e66d/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+body{margin:0;background:var(--color-bg);-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+a{color:var(--color-accent)} a:hover{color:var(--color-accent-400)}
+button{font-family:inherit;color:inherit}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=range]{accent-color:var(--color-accent)}
+</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);font-variant-numeric:tabular-nums">
+<div style="max-width:440px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 104px);display:flex;flex-direction:column;gap:14px">
+
+<sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+  <header style="padding:10px 2px 2px;display:flex;flex-direction:column;gap:2px">
+    <div style="font-size:13px;color:var(--color-neutral-500)">{{ dateLong }}</div>
+    <h1 style="font-size:30px;margin:0">{{ greeting }}</h1>
+  </header>
+
+  <sc-if value="{{ showRecovery }}">
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:18px 16px;box-shadow:0 0 0 1px var(--color-accent-700), 0 0 40px -12px var(--color-accent-700);display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300);font-weight:500">Welcome back</span>
+      <h2 style="font-size:24px;margin:0;text-wrap:pretty">Your previous progress is still here.</h2>
+      <div style="font-size:13px;color:var(--color-neutral-400)">Started at {{ w.start }} kg · Lowest {{ w.lowest }} kg · Every record kept</div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid var(--color-divider);padding-top:4px">
+        <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500;padding:8px 0 2px">Today</span>
+        <sc-for list="{{ recoverySteps }}" as="s" hint-placeholder-count="5">
+          <button onClick="{{ s.toggle }}" style="display:flex;align-items:center;gap:12px;min-height:44px;background:transparent;border:0;font-size:15px;text-align:left;cursor:pointer;padding:0">
+            <i class="{{ s.icon }}" style="font-size:22px;color:{{ s.color }}"></i><span>{{ s.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <button class="btn btn-primary btn-block" onClick="{{ continueJourney }}" style="min-height:48px;font-size:15px">Continue journey</button>
+    </div>
+  </sc-if>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Current weight</span>
+      <button class="btn btn-ghost" onClick="{{ openWeight }}" style="min-height:36px;padding:0 10px;font-size:13px"><i class="ph ph-plus"></i>Log weight</button>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:6px">
+      <span style="font-size:46px;font-weight:500;letter-spacing:-.03em;line-height:1">{{ w.current }}</span>
+      <span style="font-size:17px;color:var(--color-neutral-500)">kg</span>
+    </div>
+    <div style="display:flex;gap:18px;font-size:13px;color:var(--color-neutral-400);flex-wrap:wrap">
+      <span>7-day avg <span style="color:var(--color-text)">{{ w.avg7 }} kg</span></span>
+      <span>Goal <span style="color:var(--color-text)">{{ w.goal }} kg</span></span>
+    </div>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Calories</span>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div style="width:116px;height:116px;position:relative;flex:none">
+        {{ ring }}
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <span style="font-size:22px;font-weight:500;line-height:1.1;color:{{ cal.color }}">{{ cal.remainingAbs }}</span>
+          <span style="font-size:11px;color:var(--color-neutral-500)">{{ cal.remainingLabel }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div style="font-size:24px;font-weight:500;line-height:1.1">{{ cal.consumed }}<span style="font-size:14px;color:var(--color-neutral-500);font-weight:400"> / {{ cal.target }} kcal</span></div>
+        <div style="display:flex;gap:20px;font-size:13px">
+          <div><div style="color:var(--color-neutral-500)">Consumed</div><div style="font-size:16px">{{ cal.consumed }}</div></div>
+          <div><div style="color:var(--color-neutral-500)">{{ cal.remainingLabelCap }}</div><div style="font-size:16px;color:{{ cal.color }}">{{ cal.remainingAbs }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:14px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Macros</span>
+    <sc-for list="{{ macros }}" as="m" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font-size:14px"><span>{{ m.name }}</span><span style="color:var(--color-neutral-500)"><span style="color:var(--color-text)">{{ m.val }}</span> / {{ m.target }} g</span></div>
+        <div style="height:6px;border-radius:3px;background:var(--color-neutral-900);overflow:hidden"><div style="height:100%;border-radius:3px;width:{{ m.pct }};background:{{ m.color }}"></div></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px 16px 6px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Today's habits</span>
+      <span style="font-size:13px;color:var(--color-neutral-400)">{{ habitDone }} / {{ habitTotal }} completed</span>
+    </div>
+    <div style="display:flex;flex-direction:column">
+      <sc-for list="{{ todayHabits }}" as="h" hint-placeholder-count="6">
+        <button onClick="{{ h.toggle }}" style="display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0;background:transparent;border:0;border-top:1px solid {{ h.border }};cursor:pointer;font-size:15px;text-align:left">
+          <span>{{ h.name }}</span>
+          <span style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--color-neutral-500)">{{ h.hint }}<span style="width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:{{ h.bg }};color:{{ h.fg }};box-shadow:{{ h.ring }}"><i class="{{ h.icon }}" style="font-size:14px"></i></span></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Today's meals</span>
+    <sc-for list="{{ todayMeals }}" as="m" hint-placeholder-count="3">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+        <div style="min-width:0"><div style="font-size:12px;color:var(--color-neutral-500)">{{ m.label }}</div><div style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.names }}</div></div>
+        <div style="font-size:14px;color:var(--color-neutral-300);flex:none">{{ m.kcal }} kcal</div>
+      </div>
+    </sc-for>
+    <sc-if value="{{ noMealsToday }}"><div style="font-size:14px;color:var(--color-neutral-500)">Nothing logged yet today.</div></sc-if>
+    <sc-if value="{{ hasQuick }}">
+      <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
+        <span style="font-size:12px;color:var(--color-neutral-500)">Quick add</span>
+        <div style="display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px 2px;scrollbar-width:none">
+          <sc-for list="{{ quickFoods }}" as="q" hint-placeholder-count="4">
+            <button onClick="{{ q.pick }}" style="flex:none;min-height:38px;padding:0 14px;border-radius:19px;background:var(--color-neutral-900);border:1px solid var(--color-neutral-800);font-size:13px;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-700)">{{ q.name }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <button class="btn btn-primary btn-block" onClick="{{ openAddFood }}" style="min-height:48px;font-size:15px"><i class="ph ph-plus"></i>Add food</button>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Daily insight</span>
+    <sc-for list="{{ insights }}" as="i" hint-placeholder-count="2">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:6px;height:6px;border-radius:3px;margin-top:9px;flex:none;background:{{ i.color }}"></span><span style="font-size:15px;line-height:1.45;text-wrap:pretty">{{ i.text }}</span></div>
+    </sc-for>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isFood }}">
+  <h1 style="font-size:30px;margin:10px 2px 0">Food</h1>
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:10px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Today</span>
+    <div style="font-size:30px;font-weight:500;line-height:1">{{ cal.consumed }}<span style="font-size:15px;color:var(--color-neutral-500);font-weight:400"> / {{ cal.target }} kcal</span></div>
+    <div style="height:6px;border-radius:3px;background:var(--color-neutral-900);overflow:hidden"><div style="height:100%;border-radius:3px;width:{{ cal.pct }};background:{{ cal.bar }}"></div></div>
+    <div style="display:flex;gap:16px;font-size:13px;color:var(--color-neutral-400)"><span>Protein <span style="color:var(--color-text)">{{ tot.p }} g</span></span><span>Carbs <span style="color:var(--color-text)">{{ tot.c }} g</span></span><span>Fat <span style="color:var(--color-text)">{{ tot.f }} g</span></span></div>
+  </div>
+  <sc-for list="{{ mealSections }}" as="s" hint-placeholder-count="4">
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:14px 16px 4px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px"><span style="font-size:17px;font-weight:500">{{ s.label }}</span><span style="font-size:13px;color:var(--color-neutral-500)">{{ s.kcal }} kcal</span></div>
+      <sc-for list="{{ s.items }}" as="it">
+        <div style="display:flex;align-items:center;gap:8px;min-height:52px;border-top:1px solid var(--color-divider)">
+          <div style="flex:1;min-width:0"><div style="font-size:15px">{{ it.name }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ it.sub }}</div></div>
+          <span style="font-size:14px;color:var(--color-neutral-300)">{{ it.kcal }}</span>
+          <button onClick="{{ it.remove }}" aria-label="Remove" style="width:40px;height:40px;border:0;background:transparent;color:var(--color-neutral-600);cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center" style-hover="color:var(--color-neutral-300)"><i class="ph ph-x"></i></button>
+        </div>
+      </sc-for>
+      <button onClick="{{ s.add }}" style="display:flex;align-items:center;gap:6px;min-height:46px;background:transparent;border:0;border-top:1px solid var(--color-divider);color:var(--color-accent-300);font-size:14px;cursor:pointer;padding:0"><i class="ph ph-plus"></i>Add to {{ s.lower }}</button>
+    </div>
+  </sc-for>
+  <button class="btn btn-primary btn-block" onClick="{{ openAddFood }}" style="min-height:52px;font-size:16px"><i class="ph ph-plus"></i>Add food</button>
+</sc-if>
+
+<sc-if value="{{ isWorkout }}">
+  <sc-if value="{{ noSession }}">
+    <h1 style="font-size:30px;margin:10px 2px 0">Workout</h1>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 0">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Templates</span>
+      <button class="btn btn-ghost" onClick="{{ newTemplate }}" style="min-height:36px;padding:0 10px;font-size:13px"><i class="ph ph-plus"></i>New template</button>
+    </div>
+    <sc-for list="{{ templates }}" as="t" hint-placeholder-count="3">
+      <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <button onClick="{{ t.edit }}" style="background:transparent;border:0;padding:0;text-align:left;cursor:pointer;min-width:0"><div style="font-size:17px;font-weight:500">{{ t.name }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ t.sub }}</div></button>
+          <button class="btn btn-primary" onClick="{{ t.start }}" style="min-height:40px;padding:0 16px;flex:none"><i class="ph ph-play"></i>Start</button>
+        </div>
+        <div style="font-size:13px;color:var(--color-neutral-400);line-height:1.5">{{ t.list }}</div>
+      </div>
+    </sc-for>
+
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Push-ups</span>
+        <button class="btn btn-ghost" onClick="{{ openPushup }}" style="min-height:36px;padding:0 10px;font-size:13px"><i class="ph ph-plus"></i>Log set</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+        <div><div style="font-size:12px;color:var(--color-neutral-500)">Personal best</div><div style="font-size:26px;font-weight:500">{{ pu.best }}</div></div>
+        <div><div style="font-size:12px;color:var(--color-neutral-500)">Latest</div><div style="font-size:26px;font-weight:500">{{ pu.latest }}</div></div>
+        <div><div style="font-size:12px;color:var(--color-neutral-500)">Change</div><div style="font-size:26px;font-weight:500;color:{{ pu.changeColor }}">{{ pu.change }}</div></div>
+      </div>
+      {{ puChart }}
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ pu.recent }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;justify-content:space-between;min-height:38px;align-items:center;border-top:1px solid var(--color-divider);font-size:14px"><span style="color:var(--color-neutral-400)">{{ r.date }}</span><span>{{ r.reps }} reps</span></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Cardio</span>
+        <button class="btn btn-ghost" onClick="{{ openCardio }}" style="min-height:36px;padding:0 10px;font-size:13px"><i class="ph ph-plus"></i>Log cardio</button>
+      </div>
+      <sc-for list="{{ cardio }}" as="c" hint-placeholder-count="3">
+        <div style="display:flex;justify-content:space-between;gap:12px;min-height:52px;align-items:center;border-top:1px solid var(--color-divider)">
+          <div style="min-width:0"><div style="font-size:15px">{{ c.activity }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ c.sub }}</div></div>
+          <span style="font-size:13px;color:var(--color-neutral-400);flex:none">{{ c.date }}</span>
+        </div>
+      </sc-for>
+      <div style="font-size:12px;color:var(--color-neutral-600);padding-top:4px">Cardio is not added back to your calorie budget.</div>
+    </div>
+
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Recent workouts</span>
+      <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+        <div style="display:flex;justify-content:space-between;gap:12px;min-height:50px;align-items:center;border-top:1px solid var(--color-divider)">
+          <div><div style="font-size:15px">{{ h.name }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ h.sub }}</div></div>
+          <span style="font-size:13px;color:var(--color-neutral-400)">{{ h.date }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasSession }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:10px 2px 0;gap:12px">
+      <div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300);font-weight:500">In progress</div><h1 style="font-size:28px;margin:2px 0 0">{{ session.name }}</h1></div>
+      <button class="btn btn-secondary" onClick="{{ cancelSession }}" style="min-height:38px;padding:0 12px;font-size:13px">Discard</button>
+    </div>
+    <sc-for list="{{ sessionEx }}" as="e" hint-placeholder-count="3">
+      <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="font-size:17px;font-weight:500">{{ e.name }}</span>
+          <sc-if value="{{ e.hasDelta }}"><span style="font-size:12px;padding:3px 9px;border-radius:6px;background:oklch(0.34 0.06 155);color:oklch(0.86 0.1 155)">{{ e.delta }}</span></sc-if>
+        </div>
+        <div style="font-size:13px;color:var(--color-neutral-400)">{{ e.last }}</div>
+        <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 14px minmax(0,1fr) 36px;gap:8px;align-items:center;font-size:11px;color:var(--color-neutral-500);text-transform:uppercase;letter-spacing:.06em;padding-top:4px"><span>Set</span><span>kg</span><span></span><span>Reps</span><span></span></div>
+        <sc-for list="{{ e.sets }}" as="st">
+          <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 14px minmax(0,1fr) 36px;gap:8px;align-items:center">
+            <span style="font-size:14px;color:var(--color-neutral-400)">{{ st.n }}</span>
+            <input class="input" type="number" inputMode="decimal" value="{{ st.w }}" onChange="{{ st.onW }}" placeholder="0" style="height:44px;font-size:17px;text-align:center">
+            <span style="color:var(--color-neutral-600);text-align:center">×</span>
+            <input class="input" type="number" inputMode="numeric" value="{{ st.r }}" onChange="{{ st.onR }}" placeholder="0" style="height:44px;font-size:17px;text-align:center">
+            <button onClick="{{ st.remove }}" aria-label="Remove set" style="width:36px;height:36px;border:0;background:transparent;color:var(--color-neutral-600);cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="ph ph-x"></i></button>
+          </div>
+        </sc-for>
+        <button onClick="{{ e.addSet }}" style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;background:var(--color-neutral-900);border:0;border-radius:var(--radius-md);color:var(--color-accent-300);font-size:14px;cursor:pointer;margin-top:4px"><i class="ph ph-plus"></i>Add set</button>
+      </div>
+    </sc-for>
+    <div style="display:flex;gap:8px">
+      <input class="input" value="{{ form.newEx }}" onChange="{{ on.newEx }}" placeholder="Add exercise" style="height:46px;font-size:15px;flex:1">
+      <button class="btn btn-secondary" onClick="{{ addExercise }}" style="min-height:46px;padding:0 14px">Add</button>
+    </div>
+    <button class="btn btn-primary btn-block" onClick="{{ finishSession }}" style="min-height:52px;font-size:16px"><i class="ph ph-check"></i>Finish workout</button>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
+  <h1 style="font-size:30px;margin:10px 2px 0">Progress</h1>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+    <sc-for list="{{ statCards }}" as="c" hint-placeholder-count="4">
+      <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">{{ c.label }}</span>
+        <span style="font-size:26px;font-weight:500;line-height:1.15">{{ c.val }}<span style="font-size:14px;color:var(--color-neutral-500);font-weight:400"> kg</span></span>
+        <span style="font-size:12px;color:var(--color-neutral-500)">{{ c.sub }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Weight trend</span>
+    <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+      <sc-for list="{{ rangeSeg }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.click }}" style="flex:1;min-height:34px;border:0;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+    </div>
+    {{ weightChart }}
+    <div style="display:flex;gap:16px;font-size:12px;color:var(--color-neutral-500)">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:3px;background:var(--color-neutral-600)"></span>Daily weight</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:2px;border-radius:1px;background:var(--color-accent)"></span>7-day average</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border-top:1px solid var(--color-divider);padding-top:12px">
+      <div><div style="font-size:12px;color:var(--color-neutral-500)">Today</div><div style="font-size:18px;font-weight:500">{{ w.current }} kg</div></div>
+      <div><div style="font-size:12px;color:var(--color-neutral-500)">7-day avg</div><div style="font-size:18px;font-weight:500">{{ w.avg7 }} kg</div></div>
+      <div><div style="font-size:12px;color:var(--color-neutral-500)">30 days</div><div style="font-size:18px;font-weight:500;color:{{ w.ch30Color }}">{{ w.ch30 }} kg</div></div>
+    </div>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:4px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500;padding-bottom:6px">This week</span>
+    <sc-for list="{{ weekRows }}" as="r" hint-placeholder-count="8">
+      <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;border-top:1px solid var(--color-divider);font-size:14px;gap:12px">
+        <span style="color:var(--color-neutral-400)">{{ r.label }}</span>
+        <span style="display:flex;gap:8px;align-items:baseline"><span>{{ r.val }}</span><span style="font-size:12px;color:{{ r.dColor }}">{{ r.delta }}</span></span>
+      </div>
+    </sc-for>
+    <div style="display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid var(--color-divider)">
+      <sc-for list="{{ weekInsights }}" as="i" hint-placeholder-count="3">
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:6px;height:6px;border-radius:3px;margin-top:8px;flex:none;background:{{ i.color }}"></span><span style="font-size:14px;line-height:1.45;text-wrap:pretty">{{ i.text }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Habit trends</span>
+    <sc-for list="{{ habitTrends }}" as="h" hint-placeholder-count="3">
+      <div style="display:grid;grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));gap:8px;align-items:end">
+        <span style="font-size:15px">{{ h.label }}</span>
+        <div><div style="font-size:11px;color:var(--color-neutral-500)">This week</div><div style="font-size:15px">{{ h.now }}</div></div>
+        <div><div style="font-size:11px;color:var(--color-neutral-500)">Previous</div><div style="font-size:15px;color:var(--color-neutral-400)">{{ h.prev }}</div></div>
+        <div style="font-size:13px;color:{{ h.color }};text-align:right">{{ h.delta }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Body measurements</span>
+      <button class="btn btn-ghost" onClick="{{ openMeasure }}" style="min-height:36px;padding:0 10px;font-size:13px"><i class="ph ph-plus"></i>Log</button>
+    </div>
+    <sc-for list="{{ measures }}" as="m" hint-placeholder-count="3">
+      <div style="display:flex;justify-content:space-between;align-items:center;min-height:50px;border-top:1px solid var(--color-divider);gap:12px">
+        <div><div style="font-size:15px">{{ m.label }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ m.sub }}</div></div>
+        <div style="text-align:right"><div style="font-size:17px;font-weight:500">{{ m.latest }} cm</div><div style="font-size:12px;color:{{ m.color }}">{{ m.change }}</div></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Progress photos</span>
+      <button class="btn btn-ghost" onClick="{{ openPhoto }}" style="min-height:36px;padding:0 10px;font-size:13px"><i class="ph ph-camera"></i>Add</button>
+    </div>
+    <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+      <sc-for list="{{ photoCatSeg }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.click }}" style="flex:1;min-height:34px;border:0;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+    </div>
+    <sc-if value="{{ noPhotos }}">
+      <div style="border:1px dashed var(--color-neutral-700);border-radius:var(--radius-md);padding:28px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">
+        <i class="ph ph-image" style="font-size:26px;color:var(--color-neutral-600)"></i>
+        <span style="font-size:14px;color:var(--color-neutral-400)">No {{ photoCatLower }} photos yet</span>
+        <span style="font-size:12px;color:var(--color-neutral-600)">Add two to compare before and now.</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ canCompare }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--color-neutral-500);text-transform:uppercase;letter-spacing:.06em">Before<select class="input" value="{{ cmpA }}" onChange="{{ onCmpA }}" style="height:40px"><sc-for list="{{ photoOpts }}" as="o"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--color-neutral-500);text-transform:uppercase;letter-spacing:.06em">Now<select class="input" value="{{ cmpB }}" onChange="{{ onCmpB }}" style="height:40px"><sc-for list="{{ photoOpts }}" as="o"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select></label>
+      </div>
+      <div style="position:relative;aspect-ratio:3/4;border-radius:var(--radius-md);overflow:hidden;background:var(--color-neutral-900)">
+        <sc-for list="{{ cmpList }}" as="c" hint-placeholder-count="0"><img src="{{ c.b }}" alt="Now" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><img src="{{ c.a }}" alt="Before" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;clip-path:{{ c.clip }}"></sc-for>
+        <div style="position:absolute;top:0;bottom:0;width:2px;background:var(--color-neutral-100);left:{{ cmp.left }};transform:translateX(-1px)"></div>
+        <span style="position:absolute;left:10px;top:10px;font-size:11px;padding:3px 8px;border-radius:6px;background:color-mix(in srgb, var(--color-bg) 75%, transparent)">{{ cmp.a.label }}</span>
+        <span style="position:absolute;right:10px;top:10px;font-size:11px;padding:3px 8px;border-radius:6px;background:color-mix(in srgb, var(--color-bg) 75%, transparent)">{{ cmp.b.label }}</span>
+      </div>
+      <input type="range" min="0" max="100" value="{{ cmpPos }}" onChange="{{ onCmp }}" style="width:100%;height:32px">
+    </sc-if>
+    <sc-if value="{{ hasPhotos }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ photoList }}" as="p">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <img src="{{ p.src }}" alt="{{ p.label }}" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;background:var(--color-neutral-900)">
+            <span style="font-size:11px;color:var(--color-neutral-400)">{{ p.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isProfile }}">
+  <h1 style="font-size:30px;margin:10px 2px 0">Profile</h1>
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:4px">
+    <div style="font-size:20px;font-weight:500;padding-bottom:6px">{{ profile.name }}</div>
+    <sc-for list="{{ profileRows }}" as="r" hint-placeholder-count="5">
+      <div style="display:flex;justify-content:space-between;min-height:40px;align-items:center;border-top:1px solid var(--color-divider);font-size:14px"><span style="color:var(--color-neutral-400)">{{ r.label }}</span><span>{{ r.val }}</span></div>
+    </sc-for>
+    <button class="btn btn-secondary btn-block" onClick="{{ editProfile }}" style="min-height:44px">Edit profile &amp; recalculate</button>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Daily targets</span>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Calorie target (kcal)<input class="input" type="number" inputMode="numeric" value="{{ profile.calorieTarget }}" onChange="{{ pf.calorieTarget }}" style="height:48px;font-size:20px"></label>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Protein g<input class="input" type="number" inputMode="numeric" value="{{ profile.protein }}" onChange="{{ pf.protein }}" style="height:44px;font-size:16px"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Carbs g<input class="input" type="number" inputMode="numeric" value="{{ profile.carbs }}" onChange="{{ pf.carbs }}" style="height:44px;font-size:16px"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Fat g<input class="input" type="number" inputMode="numeric" value="{{ profile.fat }}" onChange="{{ pf.fat }}" style="height:44px;font-size:16px"></label>
+    </div>
+    <div style="font-size:13px;color:var(--color-neutral-400);line-height:1.5">Estimated BMR {{ est.bmr }} kcal · estimated maintenance {{ est.tdee }} kcal. Mifflin-St Jeor estimates — adjust based on your own trend.</div>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px 16px 6px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:6px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Habits</span>
+    <sc-for list="{{ habitToggles }}" as="h" hint-placeholder-count="6">
+      <button onClick="{{ h.toggle }}" style="display:flex;justify-content:space-between;align-items:center;min-height:48px;background:transparent;border:0;border-top:1px solid var(--color-divider);font-size:15px;cursor:pointer;padding:0">
+        <span>{{ h.name }}</span>
+        <span style="width:44px;height:26px;border-radius:13px;background:{{ h.track }};position:relative;flex:none"><span style="position:absolute;top:3px;width:20px;height:20px;border-radius:10px;background:var(--color-neutral-100);left:{{ h.knob }}"></span></span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:10px">
+    <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);font-weight:500">Backup &amp; restore</span>
+    <div style="font-size:14px;color:var(--color-neutral-300);line-height:1.5;text-wrap:pretty">Everything is stored only on this device. Clearing Safari data or removing the app can erase it — including photos. Export a backup regularly.</div>
+    <div style="font-size:12px;color:var(--color-neutral-500)">{{ backupMeta }}</div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+      <button class="btn btn-primary" onClick="{{ exportData }}" style="min-height:46px"><i class="ph ph-download-simple"></i>Export JSON</button>
+      <label class="btn btn-secondary" style="min-height:46px;position:relative;overflow:hidden"><i class="ph ph-upload-simple"></i>Import<input type="file" accept="application/json,.json" onChange="{{ onImportFile }}" style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>
+    </div>
+  </div>
+  <div style="font-size:12px;color:var(--color-neutral-600);padding:0 2px;line-height:1.5">Recommendations are simple rules based on your logs, not medical advice.</div>
+</sc-if>
+
+</div>
+
+<nav style="position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:440px;margin:0 auto;background:color-mix(in srgb, var(--color-bg) 86%, transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--color-divider);padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr))">
+  <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
+    <button onClick="{{ t.click }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;background:transparent;border:0;cursor:pointer;color:{{ t.color }};font-size:10.5px;font-weight:500;letter-spacing:.01em">
+      <i class="{{ t.icon }}" style="font-size:24px"></i>{{ t.label }}
+    </button>
+  </sc-for>
+</nav>
+
+<sc-if value="{{ hasToast }}">
+  <div style="position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top) + 12px);z-index:80;max-width:408px;margin:0 auto;background:var(--color-neutral-900);box-shadow:var(--shadow-md);border-radius:var(--radius-md);padding:12px 14px;font-size:14px;display:flex;gap:8px;align-items:center"><i class="ph ph-check-circle" style="color:var(--color-accent);font-size:18px"></i>{{ toast }}</div>
+</sc-if>
+
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeSheet }}" style="position:fixed;inset:0;z-index:40;background:color-mix(in srgb, var(--color-bg) 70%, transparent);backdrop-filter:blur(2px)"></div>
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:440px;margin:0 auto;max-height:88vh;overflow-y:auto;background:var(--color-surface);border-radius:18px 18px 0 0;box-shadow:var(--shadow-lg);padding:8px 16px calc(env(safe-area-inset-bottom) + 20px);display:flex;flex-direction:column;gap:14px">
+    <div style="width:36px;height:4px;border-radius:2px;background:var(--color-neutral-700);margin:0 auto"></div>
+
+    <sc-if value="{{ fsPick }}">
+      <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:20px;margin:0">Add food</h3><span style="font-size:13px;color:var(--color-neutral-500)">to {{ fsMealLabel }}</span></div>
+      <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+        <sc-for list="{{ fsTabSeg }}" as="o"><button onClick="{{ o.click }}" style="flex:1;min-height:36px;border:0;border-radius:6px;font-size:12.5px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+      </div>
+      <div style="position:relative"><i class="ph ph-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--color-neutral-500)"></i><input class="input" value="{{ form.q }}" onChange="{{ on.q }}" placeholder="Search your foods" style="height:44px;font-size:15px;padding-left:36px"></div>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ fsList }}" as="f">
+          <div style="display:flex;align-items:center;gap:2px;border-top:1px solid var(--color-divider)">
+            <button onClick="{{ f.pick }}" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:56px;background:transparent;border:0;text-align:left;cursor:pointer;padding:0"><span style="font-size:15px">{{ f.name }}</span><span style="font-size:12px;color:var(--color-neutral-500)">{{ f.sub }}</span></button>
+            <sc-if value="{{ f.manage }}">
+              <button onClick="{{ f.edit }}" aria-label="Edit" style="width:38px;height:44px;border:0;background:transparent;color:var(--color-neutral-500);cursor:pointer"><i class="ph ph-pencil-simple"></i></button>
+              <button onClick="{{ f.dup }}" aria-label="Duplicate" style="width:38px;height:44px;border:0;background:transparent;color:var(--color-neutral-500);cursor:pointer"><i class="ph ph-copy"></i></button>
+              <button onClick="{{ f.del }}" aria-label="Delete" style="width:38px;height:44px;border:0;background:transparent;color:var(--color-neutral-500);cursor:pointer"><i class="ph ph-trash"></i></button>
+            </sc-if>
+            <button onClick="{{ f.fav }}" aria-label="Favorite" style="width:40px;height:44px;border:0;background:transparent;cursor:pointer;color:{{ f.favColor }}"><i class="{{ f.favIcon }}" style="font-size:18px"></i></button>
+          </div>
+        </sc-for>
+        <sc-if value="{{ fsEmpty }}"><div style="font-size:14px;color:var(--color-neutral-500);padding:18px 0">{{ fsEmptyText }}</div></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ fsAmount }}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onClick="{{ fsBack }}" aria-label="Back" style="width:40px;height:40px;border:0;background:transparent;cursor:pointer;margin-left:-10px;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph ph-caret-left"></i></button>
+        <div style="min-width:0"><div style="font-size:19px;font-weight:500">{{ fsFood.name }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ fsFood.sub }}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input class="input" type="number" inputMode="decimal" value="{{ form.qty }}" onChange="{{ on.qty }}" style="flex:1;height:60px;font-size:30px;font-weight:500">
+        <span style="font-size:17px;color:var(--color-neutral-400);min-width:52px">{{ fsFood.unit }}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <sc-for list="{{ qtyChips }}" as="c"><button onClick="{{ c.set }}" style="min-height:36px;padding:0 14px;border-radius:18px;background:var(--color-neutral-900);border:1px solid var(--color-neutral-800);font-size:13px;cursor:pointer">{{ c.label }}</button></sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:var(--color-neutral-900);border-radius:var(--radius-md);padding:12px">
+        <div><div style="font-size:20px;font-weight:500">{{ calc.kcal }}</div><div style="font-size:11px;color:var(--color-neutral-500)">kcal</div></div>
+        <div><div style="font-size:20px;font-weight:500">{{ calc.p }}</div><div style="font-size:11px;color:var(--color-neutral-500)">Protein g</div></div>
+        <div><div style="font-size:20px;font-weight:500">{{ calc.c }}</div><div style="font-size:11px;color:var(--color-neutral-500)">Carbs g</div></div>
+        <div><div style="font-size:20px;font-weight:500">{{ calc.f }}</div><div style="font-size:11px;color:var(--color-neutral-500)">Fat g</div></div>
+      </div>
+      <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+        <sc-for list="{{ mealSeg }}" as="o"><button onClick="{{ o.click }}" style="flex:1;min-height:38px;border:0;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+      </div>
+      <button class="btn btn-primary btn-block" onClick="{{ addLog }}" style="min-height:52px;font-size:16px">Add to {{ fsMealLabel }}</button>
+    </sc-if>
+
+    <sc-if value="{{ fsCreate }}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onClick="{{ fsBack }}" aria-label="Back" style="width:40px;height:40px;border:0;background:transparent;cursor:pointer;margin-left:-10px;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph ph-caret-left"></i></button>
+        <h3 style="font-size:20px;margin:0">{{ fsCreateTitle }}</h3>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Food name<input class="input" value="{{ form.name }}" onChange="{{ on.name }}" placeholder="e.g. Buckwheat" style="height:46px;font-size:16px"></label>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:8px;align-items:end">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Serving size<input class="input" type="number" inputMode="decimal" value="{{ form.per }}" onChange="{{ on.per }}" style="height:44px;font-size:16px"></label>
+        <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900);height:44px">
+          <sc-for list="{{ unitSeg }}" as="o"><button onClick="{{ o.click }}" style="flex:1;border:0;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Calories (kcal)<input class="input" type="number" inputMode="decimal" value="{{ form.kcal }}" onChange="{{ on.kcal }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Protein (g)<input class="input" type="number" inputMode="decimal" value="{{ form.p }}" onChange="{{ on.p }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Carbs (g)<input class="input" type="number" inputMode="decimal" value="{{ form.c }}" onChange="{{ on.c }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Fat (g)<input class="input" type="number" inputMode="decimal" value="{{ form.f }}" onChange="{{ on.f }}" style="height:44px;font-size:16px"></label>
+      </div>
+      <div style="font-size:12px;color:var(--color-neutral-500)">Values are per serving size above. Check your packaging — nothing here is medically verified.</div>
+      <button class="btn btn-primary btn-block" onClick="{{ saveFood }}" style="min-height:50px;font-size:15px">Save food</button>
+    </sc-if>
+
+    <sc-if value="{{ shWeight }}">
+      <h3 style="font-size:20px;margin:0">Log weight</h3>
+      <div style="font-size:13px;color:var(--color-neutral-500)">{{ dateLong }} · replaces today's entry if one exists</div>
+      <div style="display:flex;align-items:center;gap:10px"><input class="input" type="number" inputMode="decimal" step="0.1" value="{{ form.w }}" onChange="{{ on.w }}" style="flex:1;height:64px;font-size:34px;font-weight:500"><span style="font-size:18px;color:var(--color-neutral-400)">kg</span></div>
+      <button class="btn btn-primary btn-block" onClick="{{ saveWeight }}" style="min-height:52px;font-size:16px">Save</button>
+    </sc-if>
+
+    <sc-if value="{{ shPushup }}">
+      <h3 style="font-size:20px;margin:0">Log push-ups</h3>
+      <div style="font-size:13px;color:var(--color-neutral-500)">Your best set today. Personal best: {{ pu.best }}</div>
+      <div style="display:flex;align-items:center;gap:10px"><input class="input" type="number" inputMode="numeric" value="{{ form.reps }}" onChange="{{ on.reps }}" style="flex:1;height:64px;font-size:34px;font-weight:500"><span style="font-size:18px;color:var(--color-neutral-400)">reps</span></div>
+      <button class="btn btn-primary btn-block" onClick="{{ savePushup }}" style="min-height:52px;font-size:16px">Save</button>
+    </sc-if>
+
+    <sc-if value="{{ shCardio }}">
+      <h3 style="font-size:20px;margin:0">Log cardio</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <sc-for list="{{ cardioChips }}" as="c"><button onClick="{{ c.set }}" style="min-height:36px;padding:0 14px;border-radius:18px;font-size:13px;cursor:pointer;background:var(--color-neutral-900);border:1px solid {{ c.border }}">{{ c.label }}</button></sc-for>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Activity<input class="input" value="{{ form.act }}" onChange="{{ on.act }}" style="height:44px;font-size:16px"></label>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Duration (min)<input class="input" type="number" inputMode="numeric" value="{{ form.dur }}" onChange="{{ on.dur }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Distance (km, optional)<input class="input" type="number" inputMode="decimal" value="{{ form.dist }}" onChange="{{ on.dist }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Speed (km/h, optional)<input class="input" type="number" inputMode="decimal" value="{{ form.speed }}" onChange="{{ on.speed }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Incline (%, optional)<input class="input" type="number" inputMode="decimal" value="{{ form.incline }}" onChange="{{ on.incline }}" style="height:44px;font-size:16px"></label>
+      </div>
+      <button class="btn btn-primary btn-block" onClick="{{ saveCardio }}" style="min-height:52px;font-size:16px">Save</button>
+    </sc-if>
+
+    <sc-if value="{{ shMeasure }}">
+      <h3 style="font-size:20px;margin:0">Log measurements</h3>
+      <div style="font-size:13px;color:var(--color-neutral-500)">All optional, in centimetres.</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Waist<input class="input" type="number" inputMode="decimal" value="{{ form.waist }}" onChange="{{ on.waist }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Chest<input class="input" type="number" inputMode="decimal" value="{{ form.chest }}" onChange="{{ on.chest }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Arm<input class="input" type="number" inputMode="decimal" value="{{ form.arm }}" onChange="{{ on.arm }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Thigh<input class="input" type="number" inputMode="decimal" value="{{ form.thigh }}" onChange="{{ on.thigh }}" style="height:44px;font-size:16px"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Hip<input class="input" type="number" inputMode="decimal" value="{{ form.hip }}" onChange="{{ on.hip }}" style="height:44px;font-size:16px"></label>
+      </div>
+      <button class="btn btn-primary btn-block" onClick="{{ saveMeasure }}" style="min-height:52px;font-size:16px">Save</button>
+    </sc-if>
+
+    <sc-if value="{{ shPhoto }}">
+      <h3 style="font-size:20px;margin:0">Add progress photo</h3>
+      <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+        <sc-for list="{{ photoCatSeg }}" as="o"><button onClick="{{ o.click }}" style="flex:1;min-height:36px;border:0;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+      </div>
+      <label style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:140px;border:1px dashed var(--color-neutral-700);border-radius:var(--radius-md);cursor:pointer;overflow:hidden;color:var(--color-neutral-400);font-size:14px">
+        <sc-if value="{{ hasPendingPhoto }}" hint-placeholder-val="{{ false }}"><img src="{{ form.photo }}" alt="Preview" style="max-height:260px;width:auto"></sc-if>
+        <sc-if value="{{ noPendingPhoto }}"><i class="ph ph-camera" style="font-size:26px"></i><span>Take or choose a photo</span></sc-if>
+        <input type="file" accept="image/*" onChange="{{ onPhotoFile }}" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Note (optional)<input class="input" value="{{ form.note }}" onChange="{{ on.note }}" style="height:44px;font-size:15px"></label>
+      <div style="font-size:12px;color:var(--color-neutral-500)">Saved with today's date and weight ({{ w.current }} kg). Resized on this device before storage.</div>
+      <button class="btn btn-primary btn-block" onClick="{{ savePhoto }}" style="min-height:52px;font-size:16px">Save photo</button>
+    </sc-if>
+
+    <sc-if value="{{ shTemplate }}">
+      <h3 style="font-size:20px;margin:0">{{ tplTitle }}</h3>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Name<input class="input" value="{{ form.tname }}" onChange="{{ on.tname }}" placeholder="e.g. Chest + Triceps" style="height:46px;font-size:16px"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Exercises, one per line<textarea class="input" value="{{ form.texes }}" onChange="{{ on.texes }}" rows="6" style="font-size:15px;line-height:1.5;resize:vertical"></textarea></label>
+      <button class="btn btn-primary btn-block" onClick="{{ saveTemplate }}" style="min-height:50px;font-size:15px">Save template</button>
+      <sc-if value="{{ tplEditing }}"><button class="btn btn-secondary btn-block" onClick="{{ deleteTemplate }}" style="min-height:44px">Delete template</button></sc-if>
+    </sc-if>
+
+    <sc-if value="{{ shImport }}">
+      <h3 style="font-size:20px;margin:0">Replace all data?</h3>
+      <div style="font-size:14px;color:var(--color-neutral-300);line-height:1.5">{{ importSummary }}</div>
+      <div style="font-size:13px;color:var(--color-neutral-500)">Your current data on this device will be replaced. Export it first if you want to keep a copy.</div>
+      <button class="btn btn-primary btn-block" onClick="{{ confirmImport }}" style="min-height:50px">Replace with backup</button>
+      <button class="btn btn-secondary btn-block" onClick="{{ closeSheet }}" style="min-height:44px">Cancel</button>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ showOb }}">
+  <div style="position:fixed;inset:0;z-index:70;background:var(--color-bg);overflow-y:auto">
+    <div style="max-width:440px;margin:0 auto;min-height:100%;padding:calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;min-height:40px">
+        <sc-if value="{{ obCanBack }}"><button onClick="{{ obBack }}" aria-label="Back" style="width:40px;height:40px;border:0;background:transparent;cursor:pointer;margin-left:-10px;font-size:20px;display:flex;align-items:center;justify-content:center"><i class="ph ph-caret-left"></i></button></sc-if>
+        <div style="display:flex;gap:6px;margin-left:auto">
+          <sc-for list="{{ obDots }}" as="d"><span style="width:22px;height:3px;border-radius:2px;background:{{ d.bg }}"></span></sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{ ob0 }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:24px">
+          <span style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300);font-weight:500">Steady</span>
+          <h1 style="font-size:36px;margin:0;text-wrap:pretty">A private tracker where progress never resets.</h1>
+          <p style="font-size:15px;color:var(--color-neutral-400);margin:0">Four quick steps to set your starting estimate. Everything stays on this phone.</p>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Your name<input class="input" value="{{ form.obName }}" onChange="{{ on.obName }}" style="height:52px;font-size:18px"></label>
+      </sc-if>
+
+      <sc-if value="{{ ob1 }}">
+        <h2 style="font-size:28px;margin:0">About you</h2>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Age<input class="input" type="number" inputMode="numeric" value="{{ form.obAge }}" onChange="{{ on.obAge }}" style="height:52px;font-size:18px"></label>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Sex
+          <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+            <sc-for list="{{ sexSeg }}" as="o"><button onClick="{{ o.click }}" style="flex:1;min-height:42px;border:0;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+          </div>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Height (cm)<input class="input" type="number" inputMode="numeric" value="{{ form.obHeight }}" onChange="{{ on.obHeight }}" style="height:52px;font-size:18px"></label>
+      </sc-if>
+
+      <sc-if value="{{ ob2 }}">
+        <h2 style="font-size:28px;margin:0">Weight and goal</h2>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Current weight (kg)<input class="input" type="number" inputMode="decimal" value="{{ form.obWeight }}" onChange="{{ on.obWeight }}" style="height:52px;font-size:18px"></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Goal weight (kg)<input class="input" type="number" inputMode="decimal" value="{{ form.obGoalW }}" onChange="{{ on.obGoalW }}" style="height:52px;font-size:18px"></label>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Goal
+          <div style="display:flex;gap:2px;padding:3px;border-radius:var(--radius-md);background:var(--color-neutral-900)">
+            <sc-for list="{{ goalSeg }}" as="o"><button onClick="{{ o.click }}" style="flex:1;min-height:42px;border:0;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button></sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--color-neutral-400)">Activity level
+          <sc-for list="{{ activityOpts }}" as="a">
+            <button onClick="{{ a.click }}" style="display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;padding:0 14px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid {{ a.border }};cursor:pointer;text-align:left">
+              <span><span style="display:block;font-size:15px;color:var(--color-text)">{{ a.label }}</span><span style="font-size:12px;color:var(--color-neutral-500)">{{ a.sub }}</span></span>
+              <i class="{{ a.icon }}" style="font-size:20px;color:var(--color-accent)"></i>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ ob3 }}">
+        <h2 style="font-size:28px;margin:0">Your starting estimate</h2>
+        <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;min-height:40px;align-items:center;font-size:14px"><span style="color:var(--color-neutral-400)">Estimated BMR</span><span>{{ obEst.bmr }} kcal</span></div>
+          <div style="display:flex;justify-content:space-between;min-height:40px;align-items:center;font-size:14px;border-top:1px solid var(--color-divider)"><span style="color:var(--color-neutral-400)">Estimated maintenance</span><span>{{ obEst.tdee }} kcal</span></div>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--color-neutral-400)">Suggested starting target (kcal/day)<input class="input" type="number" inputMode="numeric" value="{{ form.obTarget }}" onChange="{{ on.obTarget }}" style="height:60px;font-size:28px;font-weight:500"></label>
+        <p style="font-size:13px;color:var(--color-neutral-400);margin:0;line-height:1.5;text-wrap:pretty">{{ obNote }} Mifflin-St Jeor estimate — you can change it any time in Profile. It won't be cut automatically.</p>
+      </sc-if>
+
+      <button class="btn btn-primary btn-block" onClick="{{ obNext }}" style="min-height:54px;font-size:16px;margin-top:auto">{{ obNextLabel }}</button>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;scenario&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Normal day&quot;,&quot;Over target&quot;,&quot;Welcome back&quot;],&quot;default&quot;:&quot;Normal day&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;showOnboarding&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+const KEY='steady.v1';
+const pad=n=>String(n).padStart(2,'0');
+const dk=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>dk(new Date());
+const addD=(k,n)=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+n);return dk(d);};
+const diffD=(a,b)=>Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/864e5);
+const fmtD=(k,o)=>new Date(k+'T12:00:00').toLocaleDateString('en-US',o||{month:'short',day:'numeric'});
+const r1=n=>Math.round(n*10)/10;
+const f1=n=>n==null||isNaN(n)?'—':(Math.round(n*10)/10).toFixed(1);
+const num=n=>Math.round(n).toLocaleString('en-US');
+const uid=()=>Math.random().toString(36).slice(2,10);
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const signed=(n,d=1)=>(n>0?'+':n<0?'−':'')+Math.abs(n).toFixed(d);
+const C={good:'oklch(0.76 0.12 155)',warn:'oklch(0.8 0.12 75)',bad:'oklch(0.7 0.15 25)',info:'var(--color-accent)',muted:'var(--color-neutral-500)'};
+const MEALS=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snacks']];
+const ACT=[['sedentary','Sedentary',1.2,'Little or no exercise'],['light','Lightly active',1.375,'Light exercise 1–3 days a week'],['moderate','Moderately active',1.55,'Exercise 3–5 days a week'],['very','Very active',1.725,'Hard exercise 6–7 days a week']];
+const HABITS=[{id:'ff',name:'No Fast Food',kind:'avoid',enabled:true},{id:'cola',name:'No Cola',kind:'avoid',enabled:true},{id:'ed',name:'No Energy Drink',kind:'avoid',enabled:true},{id:'wo',name:'Workout',kind:'do',enabled:true},{id:'walk',name:'Walking',kind:'do',enabled:true},{id:'water',name:'Water Goal',kind:'do',enabled:true}];
+const METRICS=[['waist','Waist'],['chest','Chest'],['arm','Arm'],['thigh','Thigh'],['hip','Hip']];
+const FORM_KEYS=['obName','obAge','obHeight','obWeight','obGoalW','obTarget','w','reps','act','dur','dist','speed','incline','waist','chest','arm','thigh','hip','note','tname','texes','q','qty','name','per','kcal','p','c','f','newEx'];
+
+// nutritionService
+function nutrition(food,qty){const x=qty/food.per;return{kcal:food.kcal*x,p:food.p*x,c:food.c*x,f:food.f*x};}
+function logEntry(food,qty,date,meal){return{id:uid(),date,meal,foodId:food.id,name:food.name,qty,unit:food.unit,...nutrition(food,qty)};}
+function estimate(p){const bmr=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:-161);const mult=(ACT.find(a=>a[0]===p.activity)||ACT[1])[2];const tdee=bmr*mult;let t=p.goal==='lose'?tdee-500:p.goal==='gain'?tdee+300:tdee;t=Math.max(t,p.sex==='male'?1500:1200);return{bmr:Math.round(bmr),tdee:Math.round(tdee/10)*10,target:Math.round(t/50)*50};}
+function macroTargets(kcal,goalW){const p=Math.round(Math.min(1.6*goalW,220)/5)*5;const f=Math.round(kcal*0.27/9/5)*5;const c=Math.max(0,Math.round((kcal-p*4-f*9)/4/5)*5);return{protein:p,carbs:c,fat:f};}
+
+// recommendationEngine — every rule is plain data: edit, reorder or remove freely.
+const RULES=[
+ {id:'over-target',scope:'day',tone:'warn',when:c=>c.kcal>c.target,text:c=>`You are ${num(c.kcal-c.target)} kcal above today's target. One day does not define your progress. Return to your normal target tomorrow.`},
+ {id:'close-to-target',scope:'day',tone:'info',when:c=>c.kcal>0&&c.remaining>=0&&c.remaining<300,text:()=>`You are close to today's calorie target. Consider a lighter meal.`},
+ {id:'room-for-dinner',scope:'day',tone:'good',when:c=>c.remaining>500&&c.hour<21,text:()=>`You have enough calories remaining for a normal dinner.`},
+ {id:'protein-evening',scope:'day',tone:'info',when:c=>c.hour>=18&&c.protein<c.pTarget*0.7,text:()=>`Protein intake is below today's target.`},
+ {id:'protein-gap',scope:'day',tone:'info',when:c=>c.protein<c.pTarget&&!(c.hour>=18&&c.protein<c.pTarget*0.7),text:c=>`You need approximately ${Math.round(c.pTarget-c.protein)} g more protein to reach today's target.`},
+ {id:'energy-streak',scope:'day',tone:'warn',when:c=>c.edStreak>=3,text:c=>`Energy drinks have been recorded for ${c.edStreak} days in a row.`},
+ {id:'up-today-trend-down',scope:'day',tone:'good',when:c=>c.todayW!=null&&c.prevW!=null&&c.todayW>c.prevW&&c.wkAvg!=null&&c.prevWkAvg!=null&&c.wkAvg<c.prevWkAvg,text:()=>`Today's weight is higher, but your weekly trend is still moving down.`},
+ {id:'trend-down',scope:'day',tone:'good',when:c=>c.wkAvg!=null&&c.prevWkAvg!=null&&c.wkAvg<c.prevWkAvg&&!(c.todayW>c.prevW),text:()=>`Your weekly weight trend is moving down.`},
+ {id:'fast-food-zero',scope:'day',tone:'good',when:c=>c.ffThis===0,text:()=>`Fast food: 0 days this week.`},
+ {id:'avg-weight-down',scope:'week',tone:'good',when:c=>c.wkAvg!=null&&c.prevWkAvg!=null&&c.wkAvg<c.prevWkAvg,text:()=>`Your average weight decreased this week.`},
+ {id:'avg-weight-up',scope:'week',tone:'info',when:c=>c.wkAvg!=null&&c.prevWkAvg!=null&&c.wkAvg>c.prevWkAvg,text:c=>`Your average weight is up ${f1(c.wkAvg-c.prevWkAvg)} kg this week. Short-term changes are normal — the long-term trend is what counts.`},
+ {id:'protein-days',scope:'week',tone:'info',when:()=>true,text:c=>`Your protein target was reached on ${c.proteinDays} of 7 days.`},
+ {id:'ed-down',scope:'week',tone:'good',when:c=>c.edThis<c.edPrev,text:()=>`Energy drink consumption decreased compared with last week.`},
+ {id:'ed-up',scope:'week',tone:'warn',when:c=>c.edThis>c.edPrev,text:()=>`Energy drink consumption increased compared with last week.`},
+ {id:'ff-down',scope:'week',tone:'good',when:c=>c.ffThis<c.ffPrev,text:c=>`Fast food days went from ${c.ffPrev} to ${c.ffThis} compared with last week.`},
+];
+function recommend(ctx,scope,max){return RULES.filter(r=>r.scope===scope&&r.when(ctx)).slice(0,max||99).map(r=>({id:r.id,text:r.text(ctx),color:C[r.tone]}));}
+
+function seed(){
+ const T=today();
+ const foods=[['chicken','Chicken breast',100,'g',165,31,0,3.6],['eggs','Eggs',1,'piece',72,6.3,0.4,4.8],['yogurt','Greek yogurt',100,'g',97,9,4,5],['banana','Banana',1,'piece',105,1.3,27,0.4],['rice','Rice, cooked',100,'g',130,2.7,28,0.3],['buck','Buckwheat, cooked',100,'g',92,3.4,20,0.6],['potato','Potatoes, boiled',100,'g',77,2,17,0.1],['beef','Beef',100,'g',250,26,0,15],['shake','Protein shake',1,'serving',120,24,3,1.5],['bar','Protein bar',1,'piece',220,20,22,7],['bread','Bread',1,'piece',80,3,15,1],['plov','Plov',100,'g',180,6,22,8],['soup','Soup',100,'ml',45,2.5,5,1.5],['burger','Burger meal',1,'serving',1150,38,120,55]]
+  .map(([id,name,per,unit,kcal,p,c,f])=>({id,name,per,unit,kcal,p,c,f,fav:['chicken','yogurt','shake','eggs'].includes(id)}));
+ const F=Object.fromEntries(foods.map(f=>[f.id,f]));
+ const logs=[];const L=(k,m,id,q)=>logs.push(logEntry(F[id],q,k,m));
+ const ffDays=[4,8,9,11,13];const habitLogs={};
+ for(let d=13;d>=0;d--){const k=addD(T,-d);
+  L(k,'breakfast','yogurt',200);L(k,'breakfast','banana',1);L(k,'lunch','chicken',200);L(k,'lunch','rice',250);
+  if(d===0)L(k,'snack','bar',1);
+  else{if(ffDays.includes(d))L(k,'dinner','burger',1);else if(d%3===0){L(k,'dinner','beef',200);L(k,'dinner','potato',300);}else if(d%3===1)L(k,'dinner','plov',350);else{L(k,'dinner','buck',250);L(k,'dinner','eggs',3);}
+   if(d%2===0)L(k,'snack','shake',1);}
+  const h={ff:!ffDays.includes(d),cola:d!==10,ed:![0,1,2,7,8,9,11,12].includes(d)};
+  if([1,3,5,8,10,12].includes(d))h.wo=true;if(![6,9].includes(d))h.walk=true;if(![2,11].includes(d))h.water=true;
+  habitLogs[k]=h;}
+ const weights=[];
+ for(let i=75;i>=0;i--){if(i%5===3&&i>2)continue;const tr=i>=30?120-(75-i)/45*4:i>=10?116+(30-i)/20*3.6:119.6-(10-i)/10*0.9;let kg=tr+0.4*Math.sin(i*1.7)+0.2*Math.sin(i*0.6);if(i===75)kg=120;if(i===0)kg=119;weights.push({id:uid(),date:addD(T,-i),kg:r1(kg)});}
+ const tpl=[{id:'t1',name:'Chest + Triceps',exercises:['Bench Press','Incline Dumbbell Press','Chest Fly','Triceps Pushdown','Push-ups']},{id:'t2',name:'Back + Biceps',exercises:['Lat Pulldown','Seated Row','Dumbbell Row','Biceps Curl']},{id:'t3',name:'Legs',exercises:['Squat','Leg Press','Romanian Deadlift','Leg Curl']}];
+ const S=(d,t,ex)=>({id:uid(),date:addD(T,-d),templateId:t,name:tpl.find(x=>x.id===t).name,exercises:ex.map(([name,sets])=>({name,sets:sets.map(([w,r])=>({w,r}))}))});
+ const workouts=[S(12,'t1',[['Bench Press',[[60,8],[60,8],[60,7]]],['Incline Dumbbell Press',[[22,10],[22,9]]],['Triceps Pushdown',[[30,12],[30,12]]],['Push-ups',[[0,8]]]]),S(10,'t2',[['Lat Pulldown',[[55,10],[55,10],[55,9]]],['Seated Row',[[50,10],[50,10]]]]),S(8,'t3',[['Squat',[[80,8],[80,8],[80,7]]],['Leg Press',[[140,10],[140,10]]]]),S(5,'t1',[['Bench Press',[[60,10],[62.5,8],[62.5,7]]],['Incline Dumbbell Press',[[24,10],[24,8]]],['Chest Fly',[[14,12],[14,12]]],['Triceps Pushdown',[[32.5,12],[32.5,10]]],['Push-ups',[[0,10]]]]),S(3,'t2',[['Lat Pulldown',[[57.5,10],[57.5,9]]],['Seated Row',[[52.5,10],[52.5,9]]],['Biceps Curl',[[12,12],[12,10]]]]),S(1,'t3',[['Squat',[[85,8],[85,7],[85,7]]],['Leg Press',[[150,10],[150,9]]],['Leg Curl',[[40,12],[40,12]]]])];
+ const pushups=[[40,5],[33,6],[26,7],[19,7],[12,8],[5,10]].map(([d,reps])=>({id:uid(),date:addD(T,-d),reps}));
+ const cardio=[{id:uid(),date:addD(T,-1),activity:'Treadmill',dur:30,dist:2.9,speed:5.8,incline:4},{id:uid(),date:addD(T,-3),activity:'Treadmill',dur:25,dist:2.4,speed:5.8,incline:3},{id:uid(),date:addD(T,-6),activity:'Outdoor walk',dur:45,dist:3.8}];
+ const measurements=[{id:uid(),date:addD(T,-60),waist:118,chest:124,arm:40,thigh:68,hip:122},{id:uid(),date:addD(T,-30),waist:115,chest:122,arm:40,hip:120},{id:uid(),date:addD(T,-2),waist:114,chest:121.5,arm:40.5,thigh:66,hip:119}];
+ return{v:1,profile:{name:'Alex',age:32,sex:'male',height:185,goalWeight:100,activity:'light',goal:'lose',calorieTarget:2300,protein:160,carbs:220,fat:75},foods,logs,habits:HABITS.map(h=>({...h})),habitLogs,weights,templates:tpl,workouts,pushups,cardio,measurements,photos:[],session:null};
+}
+
+class Component extends DCLogic {
+ state=this.init();
+ init(){let data=null;try{data=JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){}if(!data||data.v!==1)data=seed();return{data,tab:'today',sheet:null,fs:null,form:{},range:'3M',photoCat:'front',cmpPos:50,cmpA:null,cmpB:null,rec:{},recDismissed:false,ob:null,obClosed:false,importData:null,toast:null,editTpl:null};}
+ save(){try{localStorage.setItem(KEY,JSON.stringify(this.state.data));}catch(e){this.flash('Storage is full — export a backup and remove some photos.');}}
+ setData(fn,after){this.setState(s=>({data:fn(s.data)}),()=>{this.save();after&&after();});}
+ flash(msg){clearTimeout(this._t);this.setState({toast:msg});this._t=setTimeout(()=>this.setState({toast:null}),2200);}
+ setForm(k,v){this.setState(s=>({form:{...s.form,[k]:v}}));}
+ open(sheet,form,extra){this.setState({sheet,form:form||{},...(extra||{})});}
+ close=()=>this.setState({sheet:null,fs:null,importData:null,editTpl:null});
+ seg(opts,cur,pick){return opts.map(([v,l])=>({label:l,click:()=>pick(v),bg:v===cur?'var(--color-neutral-800)':'transparent',fg:v===cur?'var(--color-text)':'var(--color-neutral-400)'}));}
+ defaultMeal(){const h=new Date().getHours();return h<11?'breakfast':h<15?'lunch':h<17?'snack':h<22?'dinner':'snack';}
+ compress(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const sc=Math.min(1,900/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',0.78));};img.onerror=rej;img.src=url;});}
+ lastPerf(name,data){const ws=[...data.workouts].sort((a,b)=>b.date.localeCompare(a.date));for(const w of ws){const e=w.exercises.find(x=>x.name===name);if(e&&e.sets.length){const b=[...e.sets].sort((a,b)=>(+b.w-+a.w)||(+b.r-+a.r))[0];return{w:+b.w,r:+b.r,date:w.date,sets:e.sets};}}return null;}
+
+ ringEl(pct,color){const h=React.createElement,r=50,Cc=2*Math.PI*r;return h('svg',{viewBox:'0 0 116 116',width:116,height:116,style:{transform:'rotate(-90deg)'}},h('circle',{cx:58,cy:58,r,fill:'none',stroke:'var(--color-neutral-900)',strokeWidth:10}),h('circle',{cx:58,cy:58,r,fill:'none',stroke:color,strokeWidth:10,strokeLinecap:'round',strokeDasharray:`${Math.max(0.001,Math.min(1,pct))*Cc} ${Cc}`,style:{transition:'stroke-dasharray .5s ease'}}));}
+ chartEl(pts,goal){const h=React.createElement;const W=340,H=180,pl=2,pr=40,pt=12,pb=24;
+  if(pts.length<2)return h('div',{style:{height:H,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--color-neutral-500)',fontSize:13}},'Not enough entries in this range yet');
+  const x0=pts[0].date,span=Math.max(1,diffD(pts[pts.length-1].date,x0));const vals=pts.flatMap(p=>[p.kg,p.ma]);let mn=Math.min(...vals)-0.4,mx=Math.max(...vals)+0.4;
+  const X=d=>pl+diffD(d,x0)/span*(W-pl-pr),Y=v=>pt+(mx-v)/(mx-mn)*(H-pt-pb);
+  const ticks=[mx-0.4,(mn+mx)/2,mn+0.4];const ma=pts.map((p,i)=>`${i?'L':'M'}${X(p.date).toFixed(1)},${Y(p.ma).toFixed(1)}`).join('');const last=pts[pts.length-1];
+  return h('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',style:{display:'block',overflow:'visible'}},
+   h('defs',null,h('linearGradient',{id:'maFill',x1:0,y1:0,x2:0,y2:1},h('stop',{offset:0,stopColor:'var(--color-accent)',stopOpacity:0.18}),h('stop',{offset:1,stopColor:'var(--color-accent)',stopOpacity:0}))),
+   ...ticks.map((t,i)=>h('g',{key:'t'+i},h('line',{x1:0,x2:W-pr+4,y1:Y(t),y2:Y(t),stroke:'var(--color-divider)',strokeDasharray:'2 4'}),h('text',{x:W,y:Y(t)+4,textAnchor:'end',fontSize:10.5,fill:'var(--color-neutral-500)'},t.toFixed(1)))),
+   h('path',{d:`${ma}L${X(last.date).toFixed(1)},${H-pb}L${X(x0).toFixed(1)},${H-pb}Z`,fill:'url(#maFill)'}),
+   ...pts.map((p,i)=>h('circle',{key:'d'+i,cx:X(p.date),cy:Y(p.kg),r:pts.length>60?1.6:2.4,fill:'var(--color-neutral-600)'})),
+   h('path',{d:ma,fill:'none',stroke:'var(--color-accent)',strokeWidth:2.4,strokeLinejoin:'round',strokeLinecap:'round'}),
+   h('circle',{cx:X(last.date),cy:Y(last.ma),r:4.5,fill:'var(--color-bg)',stroke:'var(--color-accent)',strokeWidth:2}),
+   h('text',{x:0,y:H-6,fontSize:10.5,fill:'var(--color-neutral-500)'},fmtD(x0)),h('text',{x:W-pr,y:H-6,fontSize:10.5,fill:'var(--color-neutral-500)',textAnchor:'end'},fmtD(last.date)));}
+ miniEl(pts){const h=React.createElement;const W=340,H=80,p=10;if(pts.length<2)return null;const mx=Math.max(...pts.map(x=>x.reps))+1,mn=Math.max(0,Math.min(...pts.map(x=>x.reps))-1);const x0=pts[0].date,span=Math.max(1,diffD(pts[pts.length-1].date,x0));
+  const X=d=>p+diffD(d,x0)/span*(W-2*p),Y=v=>p+(mx-v)/(mx-mn)*(H-2*p);const d=pts.map((q,i)=>`${i?'L':'M'}${X(q.date).toFixed(1)},${Y(q.reps).toFixed(1)}`).join('');
+  return h('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',style:{display:'block'}},h('path',{d,fill:'none',stroke:'var(--color-accent)',strokeWidth:2,strokeLinejoin:'round'}),...pts.map((q,i)=>h('circle',{key:i,cx:X(q.date),cy:Y(q.reps),r:3.5,fill:'var(--color-surface)',stroke:'var(--color-accent)',strokeWidth:2})));}
+
+ openAddFood(meal,foodId){const d=this.state.data;const recent=this.recentFoods(d);const fs={tab:recent.length?'recent':'mine',mode:'pick',meal:meal||this.defaultMeal(),foodId:null};let form={q:''};if(foodId){fs.mode='amount';fs.foodId=foodId;const r=recent.find(x=>x.id===foodId);form.qty=String(r?r.lastQty:d.foods.find(f=>f.id===foodId).per);}this.setState({sheet:'food',fs,form});}
+ recentFoods(d){const seen=new Set(),out=[];[...d.logs].sort((a,b)=>b.date.localeCompare(a.date)).forEach(l=>{if(seen.has(l.foodId))return;const f=d.foods.find(x=>x.id===l.foodId);if(!f)return;seen.add(l.foodId);out.push({...f,lastQty:l.qty});});return out;}
+ startOb(){const d=this.state.data,P=d.profile;const ws=[...d.weights].sort((a,b)=>a.date.localeCompare(b.date));const cw=ws.length?ws[ws.length-1].kg:'';this.setState({ob:{step:0,sex:P.sex,goal:P.goal,activity:P.activity},form:{obName:P.name,obAge:String(P.age),obHeight:String(P.height),obWeight:String(cw),obGoalW:String(P.goalWeight),obTarget:''}});}
+ obProfile(){const s=this.state,f=s.form,o=s.ob;return{name:f.obName||'',age:+f.obAge||30,height:+f.obHeight||175,weight:+f.obWeight||80,goalWeight:+f.obGoalW||+f.obWeight||80,sex:o.sex,goal:o.goal,activity:o.activity};}
+ obNext=()=>{const s=this.state,o=s.ob;if(o.step<3){const next={...o,step:o.step+1};const form={...s.form};if(next.step===3)form.obTarget=String(estimate(this.obProfile()).target);this.setState({ob:next,form});return;}
+  const p=this.obProfile(),T=today(),target=+s.form.obTarget||estimate(p).target;
+  this.setData(d=>{const ws=d.weights.filter(w=>w.date!==T);const last=[...d.weights].sort((a,b)=>a.date.localeCompare(b.date)).pop();const addW=!last||last.kg!==p.weight;return{...d,profile:{...d.profile,name:p.name,age:p.age,height:p.height,sex:p.sex,goal:p.goal,activity:p.activity,goalWeight:p.goalWeight,calorieTarget:target,...macroTargets(target,p.goalWeight)},weights:addW?[...ws,{id:uid(),date:T,kg:p.weight}]:d.weights};},()=>{this.setState({ob:null,obClosed:true});this.flash('Targets updated');});};
+
+ renderVals(){
+  const s=this.state,d=s.data,P=d.profile,T=today(),hour=new Date().getHours();
+  const scen=this.props.scenario??'Normal day';
+  const burger=d.foods.find(f=>f.id==='burger')||{id:'burger',name:'Burger meal',per:1,unit:'serving',kcal:1150,p:38,c:120,f:55};
+  const logs=scen==='Over target'?[...d.logs,{...logEntry(burger,1,T,'dinner'),id:'virtual'}]:d.logs;
+  const hl=k=>{const o={...(d.habitLogs[k]||{})};if(scen==='Over target'&&k===T)o.ff=false;return o;};
+  const dayT={};logs.forEach(l=>{const t=dayT[l.date]||(dayT[l.date]={kcal:0,p:0,c:0,f:0});t.kcal+=l.kcal;t.p+=l.p;t.c+=l.c;t.f+=l.f;});
+  const tt=dayT[T]||{kcal:0,p:0,c:0,f:0};
+  // progressService
+  const ws=[...d.weights].sort((a,b)=>a.date.localeCompare(b.date));
+  const withMa=ws.map(e=>({...e,ma:mean(ws.filter(x=>{const g=diffD(e.date,x.date);return g>=0&&g<7;}).map(x=>x.kg))}));
+  const cur=ws.length?ws[ws.length-1]:null,start=ws[0]||null,low=ws.length?ws.reduce((a,b)=>b.kg<a.kg?b:a):null;
+  const inDays=(k,a,b)=>{const g=diffD(T,k);return g>=a&&g<=b;};
+  const wkAvg=mean(ws.filter(x=>inDays(x.date,0,6)).map(x=>x.kg)),prevWkAvg=mean(ws.filter(x=>inDays(x.date,7,13)).map(x=>x.kg));
+  const maAt=k=>{const c=withMa.filter(x=>x.date<=k);return c.length?c[c.length-1].ma:null;};
+  const ma30=maAt(addD(T,-30)),maNow=maAt(T);const ch30=ma30!=null&&maNow!=null?maNow-ma30:null;
+  const keys=(a,b)=>{const o=[];for(let i=a;i<=b;i++)o.push(addD(T,-i));return o;};
+  const thisK=keys(0,6),prevK=keys(7,13);
+  const cnt=(ks,id,val)=>ks.filter(k=>hl(k)[id]===val).length;
+  let edStreak=0;for(let i=0;i<30;i++){if(hl(addD(T,-i)).ed===false)edStreak++;else break;}
+  const pTarget=+P.protein||0,target=+P.calorieTarget||0;
+  const proteinDays=thisK.filter(k=>(dayT[k]?.p||0)>=pTarget).length;
+  const sessDays=ks=>ks.filter(k=>d.workouts.some(w=>w.date===k)||hl(k).wo===true).length;
+  const ctx={kcal:tt.kcal,target,remaining:target-tt.kcal,protein:tt.p,pTarget,hour,edStreak,todayW:cur&&cur.date===T?cur.kg:null,prevW:ws.length>1?ws[ws.length-2].kg:null,wkAvg,prevWkAvg,ffThis:cnt(thisK,'ff',false),ffPrev:cnt(prevK,'ff',false),edThis:cnt(thisK,'ed',false),edPrev:cnt(prevK,'ed',false),colaThis:cnt(thisK,'cola',false),colaPrev:cnt(prevK,'cola',false),proteinDays,workouts:sessDays(thisK)};
+
+  const over=tt.kcal-target,remaining=target-tt.kcal;
+  const calColor=over>0?(over>target*0.1?C.bad:C.warn):'var(--color-text)';
+  const ringColor=over>0?(over>target*0.1?C.bad:C.warn):'var(--color-accent)';
+  const cal={consumed:num(tt.kcal),target:num(target),remainingAbs:num(Math.abs(remaining)),remainingLabel:over>0?'kcal over':'kcal left',remainingLabelCap:over>0?'Over':'Remaining',color:calColor,pct:Math.min(100,tt.kcal/Math.max(1,target)*100)+'%',bar:ringColor};
+
+  const macros=[['Protein',tt.p,pTarget,'min'],['Carbs',tt.c,+P.carbs,'max'],['Fat',tt.f,+P.fat,'max']].map(([name,v,t,kind])=>({name,val:Math.round(v),target:t,pct:Math.min(100,v/Math.max(1,t)*100)+'%',color:kind==='min'?(v>=t?C.good:'var(--color-accent)'):(v>t*1.1?C.warn:'var(--color-accent)')}));
+
+  const enabled=d.habits.filter(h=>h.enabled);const th=hl(T);
+  const todayHabits=enabled.map((h,i)=>{const v=th[h.id];const done=v===true,miss=v===false;
+   return{name:h.name,border:i?'var(--color-divider)':'transparent',hint:miss?(h.kind==='avoid'?'Had one':''):'',bg:done?'oklch(0.34 0.06 155)':miss?'oklch(0.36 0.06 75)':'transparent',fg:done?C.good:miss?C.warn:'transparent',ring:done||miss?'none':'inset 0 0 0 1.5px var(--color-neutral-700)',icon:done?'ph-bold ph-check':miss?'ph-bold ph-x':'ph ph-circle',
+    toggle:()=>this.setData(dd=>{const cur=(dd.habitLogs[T]||{})[h.id];const nx=h.kind==='avoid'?(cur===undefined?true:cur===true?false:undefined):(cur===true?undefined:true);const day={...(dd.habitLogs[T]||{})};if(nx===undefined)delete day[h.id];else day[h.id]=nx;return{...dd,habitLogs:{...dd.habitLogs,[T]:day}};})};});
+  const habitDone=enabled.filter(h=>th[h.id]===true).length;
+
+  const todayLogs=logs.filter(l=>l.date===T);
+  const todayMeals=MEALS.map(([m,l])=>{const it=todayLogs.filter(x=>x.meal===m);return it.length?{label:l==='Snacks'?'Snack':l,names:it.map(x=>x.name).join(' + '),kcal:num(it.reduce((a,b)=>a+b.kcal,0))}:null;}).filter(Boolean);
+  const recent=this.recentFoods(d);
+  const quickFoods=recent.slice(0,8).map(f=>({name:f.name,pick:()=>this.openAddFood(null,f.id)}));
+
+  let insights=recommend(ctx,'day',3);if(!insights.length)insights=[{text:'Log a meal or your weight to see today’s insight.',color:C.muted}];
+
+  const lastAct=[...d.logs.map(l=>l.date),...d.weights.map(w=>w.date)].sort().pop();
+  const gap=lastAct?diffD(T,lastAct):99;
+  const showRecovery=(scen==='Welcome back'||gap>=3)&&!s.recDismissed;
+  const recoverySteps=[["w","Log today's weight"],['m','Log your next meal'],['water','Drink water'],['walk','Take a walk'],['t','Return to your normal calorie target']].map(([id,label])=>({label,icon:s.rec[id]?'ph-fill ph-check-circle':'ph ph-circle',color:s.rec[id]?C.good:'var(--color-neutral-600)',toggle:()=>this.setState(x=>({rec:{...x.rec,[id]:!x.rec[id]}}))}));
+
+  const mealSections=MEALS.map(([m,l])=>{const it=todayLogs.filter(x=>x.meal===m);return{label:l,lower:l.toLowerCase(),kcal:num(it.reduce((a,b)=>a+b.kcal,0)),add:()=>this.openAddFood(m),
+   items:it.map(x=>({name:x.name,kcal:num(x.kcal),sub:`${r1(x.qty)} ${x.unit} · P ${Math.round(x.p)} · C ${Math.round(x.c)} · F ${Math.round(x.f)}`,remove:()=>x.id==='virtual'?this.flash('Demo entry — switch the scenario off to remove'):this.setData(dd=>({...dd,logs:dd.logs.filter(y=>y.id!==x.id)}))}))};});
+
+  // food sheet
+  const fs=s.fs||{};const form=s.form;
+  const q=(form.q||'').trim().toLowerCase();
+  const baseList=fs.tab==='recent'?recent:fs.tab==='fav'?d.foods.filter(f=>f.fav):d.foods;
+  const fsList=baseList.filter(f=>!q||f.name.toLowerCase().includes(q)).map(f=>({name:f.name,sub:`${num(f.kcal)} kcal · ${f.per} ${f.unit} · P ${f.p} · C ${f.c} · F ${f.f}`,manage:fs.tab==='mine',favIcon:f.fav?'ph-fill ph-star':'ph ph-star',favColor:f.fav?'var(--color-accent)':'var(--color-neutral-600)',
+   pick:()=>this.setState(x=>({fs:{...x.fs,mode:'amount',foodId:f.id},form:{...x.form,qty:String(f.lastQty??f.per)}})),
+   fav:()=>this.setData(dd=>({...dd,foods:dd.foods.map(y=>y.id===f.id?{...y,fav:!y.fav}:y)})),
+   edit:()=>this.setState(x=>({fs:{...x.fs,mode:'create',editId:f.id,unit:f.unit},form:{...x.form,name:f.name,per:String(f.per),kcal:String(f.kcal),p:String(f.p),c:String(f.c),f:String(f.f)}})),
+   dup:()=>this.setData(dd=>({...dd,foods:[...dd.foods,{...dd.foods.find(y=>y.id===f.id),id:uid(),name:f.name+' (copy)',fav:false}]})),
+   del:()=>{if(confirm(`Delete “${f.name}”? Past logs keep their values.`))this.setData(dd=>({...dd,foods:dd.foods.filter(y=>y.id!==f.id)}));}}));
+  const fsFoodRaw=d.foods.find(f=>f.id===fs.foodId);
+  const qty=parseFloat(form.qty)||0;const n=fsFoodRaw?nutrition(fsFoodRaw,qty):{kcal:0,p:0,c:0,f:0};
+  const chipsFor=u=>u==='g'||u==='ml'?[100,150,200,250,300]:[1,2,3];
+  const fsMealLabel=(MEALS.find(m=>m[0]===fs.meal)||['','Dinner'])[1].replace('Snacks','Snack').toLowerCase();
+
+  // workouts
+  const sess=d.session;
+  const updSess=fn=>this.setData(dd=>({...dd,session:fn(dd.session)}));
+  const sessionEx=sess?sess.exercises.map((e,ei)=>{const lp=this.lastPerf(e.name,d);const best=e.sets.filter(x=>+x.r>0).sort((a,b)=>(+b.w-+a.w)||(+b.r-+a.r))[0];let delta='';
+   if(lp&&best){const dw=+best.w-lp.w,dr=+best.r-lp.r;if(dw>0)delta=`+${r1(dw)} kg`;else if(dw===0&&dr>0)delta=`+${dr} reps`;}
+   return{name:e.name,hasDelta:!!delta,delta,last:lp?`Last time: ${lp.w?lp.w+' kg × ':''}${lp.r}${lp.w?'':' reps'} · ${fmtD(lp.date)}`:'First time logging this exercise',
+    addSet:()=>updSess(ss=>({...ss,exercises:ss.exercises.map((x,i)=>i===ei?{...x,sets:[...x.sets,{...(x.sets[x.sets.length-1]||{w:'',r:''})}]}:x)})),
+    sets:e.sets.map((st,si)=>{const set=(k,v)=>updSess(ss=>({...ss,exercises:ss.exercises.map((x,i)=>i===ei?{...x,sets:x.sets.map((y,j)=>j===si?{...y,[k]:v}:y)}:x)}));return{n:si+1,w:st.w,r:st.r,onW:ev=>set('w',ev.target.value),onR:ev=>set('r',ev.target.value),remove:()=>updSess(ss=>({...ss,exercises:ss.exercises.map((x,i)=>i===ei?{...x,sets:x.sets.filter((_,j)=>j!==si)}:x)}))};})};}):[];
+  const templates=d.templates.map(t=>{const last=d.workouts.filter(w=>w.templateId===t.id).map(w=>w.date).sort().pop();return{name:t.name,sub:`${t.exercises.length} exercises${last?' · Last: '+fmtD(last):''}`,list:t.exercises.join(' · '),
+   start:()=>this.setData(dd=>({...dd,session:{name:t.name,templateId:t.id,exercises:t.exercises.map(nm=>{const lp=this.lastPerf(nm,dd);return{name:nm,sets:lp?lp.sets.map(x=>({w:String(x.w||''),r:''})):[{w:'',r:''}]};})}})),
+   edit:()=>this.open('template',{tname:t.name,texes:t.exercises.join('\n')},{editTpl:t.id})};});
+  const pus=[...d.pushups].sort((a,b)=>a.date.localeCompare(b.date));
+  const puBest=pus.length?Math.max(...pus.map(x=>x.reps)):0,puCh=pus.length>1?pus[pus.length-1].reps-pus[0].reps:0;
+  const pu={best:puBest,latest:pus.length?pus[pus.length-1].reps:'—',change:(puCh>0?'+':'')+puCh,changeColor:puCh>0?C.good:'var(--color-text)',recent:pus.slice(-4).reverse().map(x=>({date:fmtD(x.date),reps:x.reps}))};
+  const cardio=[...d.cardio].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map(c=>({activity:c.activity,date:fmtD(c.date),sub:[`${c.dur} min`,c.dist&&`${c.dist} km`,c.speed&&`${c.speed} km/h`,c.incline&&`${c.incline}% incline`].filter(Boolean).join(' · ')}));
+  const history=[...d.workouts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(w=>({name:w.name,date:fmtD(w.date),sub:`${w.exercises.length} exercises · ${w.exercises.reduce((a,e)=>a+e.sets.length,0)} sets`}));
+
+  // progress
+  const RANGES=[['7D',7],['1M',30],['3M',90],['6M',180],['1Y',365],['ALL',1e5]];
+  const days=(RANGES.find(r=>r[0]===s.range)||RANGES[2])[1];
+  const pts=withMa.filter(x=>diffD(T,x.date)<days);
+  const goalW=+P.goalWeight;
+  const statCards=[{label:'Current',val:f1(cur?.kg),sub:cur?fmtD(cur.date):'—'},{label:'Start',val:f1(start?.kg),sub:start?fmtD(start.date):'—'},{label:'Lowest',val:f1(low?.kg),sub:low?fmtD(low.date):'—'},{label:'Goal',val:f1(goalW),sub:cur?`${f1(Math.abs(cur.kg-goalW))} kg to go`:''}];
+  const dl=(a,b,unit,lowerBetter=true)=>{if(a==null||b==null)return{delta:'',dColor:C.muted};const x=a-b;if(Math.abs(x)<0.05)return{delta:'no change',dColor:C.muted};return{delta:(x<0?'↓ ':'↑ ')+Math.abs(x).toFixed(unit==='kg'?1:0)+(unit?' '+unit:''),dColor:(x<0)===lowerBetter?C.good:C.muted};};
+  const avgCal=mean(thisK.filter(k=>dayT[k]?.kcal>0).map(k=>dayT[k].kcal)),avgCalPrev=mean(prevK.filter(k=>dayT[k]?.kcal>0).map(k=>dayT[k].kcal));
+  const dd2=(n)=>`${n} ${n===1?'day':'days'}`;
+  const weekRows=[{label:'Average weight',val:wkAvg!=null?f1(wkAvg)+' kg':'—',...dl(wkAvg,prevWkAvg,'kg')},{label:'Average calories',val:avgCal!=null?num(avgCal)+' kcal/day':'—',delta:'',dColor:C.muted},{label:'Protein target reached',val:`${proteinDays} / 7 days`,delta:'',dColor:C.muted},{label:'Workouts',val:String(ctx.workouts),...dl(ctx.workouts,sessDays(prevK),'',false)},{label:'Walking',val:`${cnt(thisK,'walk',true)} / 7 days`,delta:'',dColor:C.muted},{label:'Fast food',val:dd2(ctx.ffThis),...dl(ctx.ffThis,ctx.ffPrev,'')},{label:'Energy drinks',val:dd2(ctx.edThis),...dl(ctx.edThis,ctx.edPrev,'')},{label:'Cola',val:dd2(ctx.colaThis),...dl(ctx.colaThis,ctx.colaPrev,'')}];
+  const habitTrends=[['Fast food',ctx.ffThis,ctx.ffPrev],['Energy drinks',ctx.edThis,ctx.edPrev],['Cola',ctx.colaThis,ctx.colaPrev]].map(([label,a,b])=>({label,now:`${a} / 7`,prev:`${b} / 7`,delta:a<b?`↓ ${dd2(b-a)}`:a>b?`↑ ${dd2(a-b)}`:'No change',color:a<b?C.good:a>b?C.warn:C.muted}));
+  const ms=[...d.measurements].sort((a,b)=>a.date.localeCompare(b.date));
+  const measures=METRICS.map(([k,l])=>{const e=ms.filter(m=>m[k]!=null&&m[k]!=='');if(!e.length)return null;const a=e[0],b=e[e.length-1],ch=b[k]-a[k];return{label:l,latest:r1(b[k]),sub:e.length>1?`Since ${fmtD(a.date)} · ${a[k]} cm`:fmtD(b.date),change:e.length>1?signed(ch)+' cm':'',color:ch<0&&k!=='arm'?C.good:C.muted};}).filter(Boolean);
+  const cats=[['front','Front'],['side','Side'],['back','Back']];
+  const catPhotos=[...d.photos].filter(p=>p.cat===s.photoCat).sort((a,b)=>a.date.localeCompare(b.date));
+  const plabel=p=>`${fmtD(p.date)} · ${f1(p.weight)} kg`;
+  const pa=catPhotos.find(p=>p.id===s.cmpA)||catPhotos[0],pb=catPhotos.find(p=>p.id===s.cmpB)||catPhotos[catPhotos.length-1];
+
+  const est=estimate({weight:cur?.kg||100,height:+P.height,age:+P.age,sex:P.sex,activity:P.activity,goal:P.goal});
+  const actLabel=(ACT.find(a=>a[0]===P.activity)||ACT[1])[1];
+  const on={};FORM_KEYS.forEach(k=>on[k]=e=>this.setForm(k,e.target.value));
+  const pf={};['calorieTarget','protein','carbs','fat'].forEach(k=>pf[k]=e=>{const v=e.target.value;this.setData(dd=>({...dd,profile:{...dd.profile,[k]:v===''?'':Number(v)}}));});
+
+  const ob=s.ob||(this.props.showOnboarding&&!s.obClosed?null:null);
+  const wantOb=!!s.ob;
+  if(this.props.showOnboarding&&!s.obClosed&&!s.ob&&!this._obStarted){this._obStarted=true;setTimeout(()=>this.startOb(),0);}
+  const o=s.ob||{step:0};
+  const obEst=s.ob?estimate(this.obProfile()):{bmr:0,tdee:0};
+  const imp=s.importData;
+  const totalPhotoKb=Math.round(d.photos.reduce((a,p)=>a+(p.src?.length||0),0)*0.75/1024);
+
+  return{
+   isToday:s.tab==='today',isFood:s.tab==='food',isWorkout:s.tab==='workout',isProgress:s.tab==='progress',isProfile:s.tab==='profile',
+   dateLong:new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
+   greeting:`Good ${hour<12?'morning':hour<18?'afternoon':'evening'}, ${P.name||'there'}`,
+   w:{current:f1(cur?.kg),avg7:f1(mean(ws.filter(x=>inDays(x.date,0,6)).map(x=>x.kg))),goal:f1(goalW),start:f1(start?.kg),lowest:f1(low?.kg),ch30:ch30!=null?signed(ch30):'—',ch30Color:ch30!=null&&ch30<0?C.good:'var(--color-text)'},
+   cal,ring:this.ringEl(tt.kcal/Math.max(1,target),ringColor),macros,tot:{p:Math.round(tt.p),c:Math.round(tt.c),f:Math.round(tt.f)},
+   todayHabits,habitDone,habitTotal:enabled.length,todayMeals,noMealsToday:!todayMeals.length,quickFoods,hasQuick:quickFoods.length>0,insights,
+   showRecovery,recoverySteps,continueJourney:()=>{this.setState({recDismissed:true});this.flash('Welcome back. Your history is intact.');},
+   openWeight:()=>this.open('weight',{w:cur?String(cur.kg):''}),openAddFood:()=>this.openAddFood(),mealSections,
+   navTabs:[['today','Today','sun-horizon'],['food','Food','fork-knife'],['workout','Workout','barbell'],['progress','Progress','chart-line-up'],['profile','Profile','user-circle']].map(([id,label,ic])=>({label,icon:(s.tab===id?'ph-fill ph-':'ph ph-')+ic,color:s.tab===id?'var(--color-accent)':'var(--color-neutral-500)',click:()=>{this.setState({tab:id});window.scrollTo(0,0);}})),
+   hasToast:!!s.toast,toast:s.toast,
+   sheetOpen:!!s.sheet,closeSheet:this.close,form,on,pf,
+   fsPick:s.sheet==='food'&&fs.mode==='pick',fsAmount:s.sheet==='food'&&fs.mode==='amount'&&!!fsFoodRaw,fsCreate:s.sheet==='food'&&fs.mode==='create',
+   fsTabSeg:this.seg([['recent','Recent'],['fav','Favorites'],['mine','My foods'],['create','Create']],fs.tab,v=>v==='create'?this.setState(x=>({fs:{...x.fs,mode:'create',editId:null,unit:'g'},form:{...x.form,name:'',per:'100',kcal:'',p:'',c:'',f:''}})):this.setState(x=>({fs:{...x.fs,tab:v}}))),
+   fsList,fsEmpty:!fsList.length,fsEmptyText:q?'No foods match your search.':fs.tab==='fav'?'Tap the star on any food to keep it here.':'Foods you log will appear here.',
+   fsMealLabel,fsFood:fsFoodRaw?{name:fsFoodRaw.name,unit:fsFoodRaw.unit,sub:`Per ${fsFoodRaw.per} ${fsFoodRaw.unit}: ${num(fsFoodRaw.kcal)} kcal · P ${fsFoodRaw.p} · C ${fsFoodRaw.c} · F ${fsFoodRaw.f}`}:{},
+   qtyChips:fsFoodRaw?chipsFor(fsFoodRaw.unit).map(v=>({label:`${v} ${fsFoodRaw.unit}`,set:()=>this.setForm('qty',String(v))})):[],
+   calc:{kcal:num(n.kcal),p:r1(n.p),c:r1(n.c),f:r1(n.f)},
+   mealSeg:this.seg(MEALS.map(([m,l])=>[m,l.replace('Snacks','Snack')]),fs.meal,v=>this.setState(x=>({fs:{...x.fs,meal:v}}))),
+   fsBack:()=>this.setState(x=>({fs:{...x.fs,mode:'pick',tab:x.fs.tab==='create'?'mine':x.fs.tab}})),
+   addLog:()=>{if(!(qty>0)||!fsFoodRaw)return this.flash('Enter an amount');const e=logEntry(fsFoodRaw,qty,T,fs.meal);this.setData(dd=>({...dd,logs:[...dd.logs,e]}),()=>{this.close();this.flash(`Added to ${fsMealLabel}`);});},
+   unitSeg:this.seg([['g','g'],['ml','ml'],['piece','piece'],['serving','serving']],fs.unit||'g',v=>this.setState(x=>({fs:{...x.fs,unit:v}}))),
+   fsCreateTitle:fs.editId?'Edit food':'Create food',
+   saveFood:()=>{const nm=(form.name||'').trim(),per=parseFloat(form.per),kc=parseFloat(form.kcal);if(!nm||!(per>0)||isNaN(kc))return this.flash('Name, serving size and calories are required');const food={id:fs.editId||uid(),name:nm,per,unit:fs.unit||'g',kcal:kc,p:parseFloat(form.p)||0,c:parseFloat(form.c)||0,f:parseFloat(form.f)||0,fav:false};
+    this.setData(dd=>({...dd,foods:fs.editId?dd.foods.map(y=>y.id===fs.editId?{...food,fav:y.fav}:y):[...dd.foods,food]}),()=>this.setState(x=>({fs:{...x.fs,mode:'amount',foodId:food.id,editId:null,tab:'mine'},form:{...x.form,qty:String(per)}})));},
+   shWeight:s.sheet==='weight',shPushup:s.sheet==='pushup',shCardio:s.sheet==='cardio',shMeasure:s.sheet==='measure',shPhoto:s.sheet==='photo',shTemplate:s.sheet==='template',shImport:s.sheet==='import',
+   saveWeight:()=>{const v=parseFloat(form.w);if(!(v>20&&v<400))return this.flash('Enter a weight in kg');this.setData(dd=>({...dd,weights:[...dd.weights.filter(x=>x.date!==T),{id:uid(),date:T,kg:r1(v)}]}),()=>{this.close();this.setState(x=>({rec:{...x.rec,w:true}}));this.flash('Weight saved');});},
+   openPushup:()=>this.open('pushup',{reps:''}),savePushup:()=>{const v=parseInt(form.reps);if(!(v>0))return this.flash('Enter reps');this.setData(dd=>({...dd,pushups:[...dd.pushups.filter(x=>!(x.date===T&&x.reps<=v)),{id:uid(),date:T,reps:v}]}),()=>{this.close();this.flash(v>puBest?`New personal best: ${v}`:'Push-ups saved');});},
+   openCardio:()=>this.open('cardio',{act:'Treadmill',dur:'30',dist:'',speed:'',incline:''}),
+   cardioChips:['Treadmill','Outdoor walk','Bike','Rowing'].map(a=>({label:a,border:form.act===a?'var(--color-accent)':'var(--color-neutral-800)',set:()=>this.setForm('act',a)})),
+   saveCardio:()=>{const dur=parseFloat(form.dur);if(!form.act||!(dur>0))return this.flash('Activity and duration are required');const o2=x=>form[x]===''||form[x]==null?undefined:parseFloat(form[x]);this.setData(dd=>({...dd,cardio:[...dd.cardio,{id:uid(),date:T,activity:form.act,dur,dist:o2('dist'),speed:o2('speed'),incline:o2('incline')}],habitLogs:/walk/i.test(form.act)?{...dd.habitLogs,[T]:{...(dd.habitLogs[T]||{}),walk:true}}:dd.habitLogs}),()=>{this.close();this.flash('Cardio saved');});},
+   openMeasure:()=>this.open('measure',{}),saveMeasure:()=>{const e={id:uid(),date:T};let any=false;METRICS.forEach(([k])=>{const v=parseFloat(form[k]);if(v>0){e[k]=v;any=true;}});if(!any)return this.flash('Enter at least one measurement');this.setData(dd=>({...dd,measurements:[...dd.measurements.filter(m=>m.date!==T),e]}),()=>{this.close();this.flash('Measurements saved');});},
+   noSession:!sess,hasSession:!!sess,session:sess||{},sessionEx,templates,pu,puChart:this.miniEl(pus),cardio,history,
+   cancelSession:()=>{if(confirm('Discard this workout?'))this.setData(dd=>({...dd,session:null}));},
+   addExercise:()=>{const nm=(form.newEx||'').trim();if(!nm)return;updSess(ss=>({...ss,exercises:[...ss.exercises,{name:nm,sets:[{w:'',r:''}]}]}));this.setForm('newEx','');},
+   finishSession:()=>{const ex=sess.exercises.map(e=>({name:e.name,sets:e.sets.filter(x=>+x.r>0).map(x=>({w:+x.w||0,r:+x.r}))})).filter(e=>e.sets.length);if(!ex.length)return this.flash('Log at least one set with reps');const pu2=ex.find(e=>/push-?up/i.test(e.name));
+    this.setData(dd=>({...dd,session:null,workouts:[...dd.workouts,{id:uid(),date:T,templateId:sess.templateId,name:sess.name,exercises:ex}],habitLogs:{...dd.habitLogs,[T]:{...(dd.habitLogs[T]||{}),wo:true}},pushups:pu2?[...dd.pushups.filter(x=>x.date!==T),{id:uid(),date:T,reps:Math.max(...pu2.sets.map(x=>x.r))}]:dd.pushups}),()=>this.flash('Workout saved'));},
+   newTemplate:()=>this.open('template',{tname:'',texes:''},{editTpl:null}),tplTitle:s.editTpl?'Edit template':'New template',tplEditing:!!s.editTpl,
+   saveTemplate:()=>{const nm=(form.tname||'').trim(),ex=(form.texes||'').split('\n').map(x=>x.trim()).filter(Boolean);if(!nm||!ex.length)return this.flash('Add a name and at least one exercise');const id=s.editTpl;this.setData(dd=>({...dd,templates:id?dd.templates.map(t=>t.id===id?{...t,name:nm,exercises:ex}:t):[...dd.templates,{id:uid(),name:nm,exercises:ex}]}),()=>{this.close();this.flash('Template saved');});},
+   deleteTemplate:()=>{const id=s.editTpl;if(confirm('Delete this template? Past workouts are kept.'))this.setData(dd=>({...dd,templates:dd.templates.filter(t=>t.id!==id)}),this.close);},
+   statCards,rangeSeg:this.seg(RANGES.map(r=>[r[0],r[0]]),s.range,v=>this.setState({range:v})),weightChart:this.chartEl(pts,goalW),
+   weekRows,weekInsights:recommend(ctx,'week'),habitTrends,measures,
+   photoCatSeg:this.seg(cats,s.photoCat,v=>this.setState({photoCat:v,cmpA:null,cmpB:null})),photoCatLower:s.photoCat,
+   noPhotos:!catPhotos.length,hasPhotos:catPhotos.length>0,canCompare:catPhotos.length>1,
+   photoList:[...catPhotos].reverse().map(p=>({src:p.src,label:plabel(p)})),photoOpts:catPhotos.map(p=>({id:p.id,label:plabel(p)})),
+   cmpA:pa?.id||'',cmpB:pb?.id||'',onCmpA:e=>this.setState({cmpA:e.target.value}),onCmpB:e=>this.setState({cmpB:e.target.value}),
+   cmpList:pa&&pb?[{a:pa.src,b:pb.src,clip:`inset(0 ${100-s.cmpPos}% 0 0)`}]:[],cmpPos:s.cmpPos,onCmp:e=>this.setState({cmpPos:+e.target.value}),
+   cmp:{a:pa?{src:pa.src,label:'Before · '+plabel(pa)}:{},b:pb?{src:pb.src,label:'Now · '+plabel(pb)}:{},clip:`inset(0 ${100-s.cmpPos}% 0 0)`,left:s.cmpPos+'%'},
+   openPhoto:()=>this.open('photo',{note:'',photo:''}),hasPendingPhoto:!!form.photo,noPendingPhoto:!form.photo,
+   onPhotoFile:async e=>{const file=e.target.files&&e.target.files[0];if(!file)return;try{const src=await this.compress(file);this.setForm('photo',src);}catch(err){this.flash('Could not read that image');}},
+   savePhoto:()=>{if(!form.photo)return this.flash('Choose a photo first');this.setData(dd=>({...dd,photos:[...dd.photos,{id:uid(),date:T,cat:s.photoCat,weight:cur?.kg,note:form.note||'',src:form.photo}]}),()=>{this.close();this.setState({cmpA:null,cmpB:null});this.flash('Photo saved on this device');});},
+   profile:P,est:{bmr:num(est.bmr),tdee:num(est.tdee)},
+   profileRows:[{label:'Age',val:P.age},{label:'Sex',val:P.sex==='male'?'Male':'Female'},{label:'Height',val:P.height+' cm'},{label:'Activity',val:actLabel},{label:'Goal',val:{lose:'Lose weight',maintain:'Maintain weight',gain:'Gain weight'}[P.goal]}],
+   editProfile:()=>this.startOb(),
+   habitToggles:d.habits.map(h=>({name:h.name,track:h.enabled?'var(--color-accent-600)':'var(--color-neutral-800)',knob:h.enabled?'21px':'3px',toggle:()=>this.setData(dd=>({...dd,habits:dd.habits.map(x=>x.id===h.id?{...x,enabled:!x.enabled}:x)}))})),
+   backupMeta:`${d.weights.length} weights · ${d.logs.length} food logs · ${d.workouts.length} workouts · ${d.photos.length} photos (${totalPhotoKb} KB)`,
+   exportData:()=>{const blob=new Blob([JSON.stringify({...d,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`steady-backup-${T}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);this.flash('Backup exported');},
+   onImportFile:e=>{const file=e.target.files&&e.target.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{try{const x=JSON.parse(rd.result);if(x.v!==1||!Array.isArray(x.weights)||!x.profile)throw 0;this.setState({importData:x,sheet:'import'});}catch(err){this.flash('That file is not a Steady backup');}};rd.readAsText(file);e.target.value='';},
+   importSummary:imp?`Backup${imp.exportedAt?' from '+fmtD(dk(new Date(imp.exportedAt)),{month:'long',day:'numeric',year:'numeric'}):''}: ${imp.weights.length} weights, ${(imp.logs||[]).length} food logs, ${(imp.workouts||[]).length} workouts, ${(imp.photos||[]).length} photos.`:'',
+   confirmImport:()=>{const x=s.importData;const {exportedAt,...rest}=x;this.setState({data:{...seed(),...rest}},()=>{this.save();this.close();this.flash('Backup restored');});},
+   showOb:!!s.ob,ob0:o.step===0,ob1:o.step===1,ob2:o.step===2,ob3:o.step===3,obCanBack:o.step>0,
+   obBack:()=>this.setState(x=>({ob:{...x.ob,step:x.ob.step-1}})),obNext:this.obNext,obNextLabel:o.step===3?'Start tracking':'Continue',
+   obDots:[0,1,2,3].map(i=>({bg:i<=o.step?'var(--color-accent)':'var(--color-neutral-800)'})),
+   sexSeg:this.seg([['male','Male'],['female','Female']],o.sex,v=>this.setState(x=>({ob:{...x.ob,sex:v}}))),
+   goalSeg:this.seg([['lose','Lose'],['maintain','Maintain'],['gain','Gain']],o.goal,v=>this.setState(x=>({ob:{...x.ob,goal:v}}))),
+   activityOpts:ACT.map(([id,label,,sub])=>({label,sub,border:o.activity===id?'var(--color-accent)':'var(--color-neutral-800)',icon:o.activity===id?'ph-fill ph-check-circle':'ph ph-circle',click:()=>this.setState(x=>({ob:{...x.ob,activity:id}}))})),
+   obEst:{bmr:num(obEst.bmr),tdee:num(obEst.tdee)},
+   obNote:o.goal==='lose'?'A moderate 500 kcal/day below estimated maintenance.':o.goal==='gain'?'A modest 300 kcal/day above estimated maintenance.':'Set at estimated maintenance.',
+  };
+ }
+}
+</script>
+</body>
+</html>
