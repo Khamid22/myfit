@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, Star } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useFoods, useMeals } from '../../hooks/data'
@@ -9,7 +9,7 @@ import { foodsRepo, mealsRepo } from '../../storage/repositories/food'
 import { useFeedback } from '../../ui/feedback'
 import { Page } from '../../ui/Page'
 import { Sheet } from '../../ui/Sheet'
-import { Button, Card, cx, Empty, IconButton, Input, Segmented } from '../../ui/primitives'
+import { Button, Card, Empty, IconButton, Input, Segmented } from '../../ui/primitives'
 import { FoodForm } from './FoodForm'
 import { MealEditor } from './MealEditor'
 
@@ -27,11 +27,11 @@ export function MyFoodsScreen() {
   const byId = useMemo(() => new Map(foods.map((f) => [f.id, f])), [foods])
   const list = foods
     .filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()))
-    .sort((a, b) => Number(b.favorite) - Number(a.favorite) || a.name.localeCompare(b.name))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <Page
-      title="My Foods"
+      title="My foods"
       eyebrow={
         <button onClick={() => navigate('/food')} className="-ml-1 flex items-center gap-1 text-accent-strong">
           <ArrowLeft size={16} /> Food
@@ -59,9 +59,6 @@ export function MyFoodsScreen() {
                   <div className="tabular truncate text-[12px] text-muted">
                     {describeServing(f)} · {int(f.kcal)} kcal · P {num(f.protein)} · C {num(f.carbs)} · F {num(f.fat)}
                   </div>
-                </button>
-                <button onClick={() => foodsRepo.toggleFavorite(f.id)} className="press grid h-11 w-11 place-items-center" aria-label="Favorite">
-                  <Star size={18} className={cx(f.favorite ? 'fill-warn text-warn' : 'text-faint')} />
                 </button>
               </div>
             ))}

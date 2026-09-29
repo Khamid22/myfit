@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { createBrowserRouter, Outlet, RouterProvider, ScrollRestoration } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, ScrollRestoration } from 'react-router'
 import { useProfile } from '../hooks/data'
 import { Onboarding } from '../features/onboarding/Onboarding'
 import { TodayScreen } from '../features/today/TodayScreen'
@@ -13,6 +13,8 @@ import { ProfileScreen } from '../features/profile/ProfileScreen'
 import { HabitsSettings } from '../features/profile/HabitsSettings'
 import { TemplatesSettings } from '../features/workout/TemplatesSettings'
 import { MyFoodsScreen } from '../features/food/MyFoodsScreen'
+import { StrengthScreen } from '../features/progress/StrengthScreen'
+import { MeasurementsScreen } from '../features/progress/MeasurementsScreen'
 import { BottomNav } from './BottomNav'
 import { ProfileProvider } from './context'
 import { SheetsProvider } from './sheets'
@@ -57,8 +59,12 @@ const router = createBrowserRouter([
       { path: '/progress', element: <ProgressScreen /> },
       { path: '/progress/week', element: <WeeklyScreen /> },
       { path: '/progress/photos', element: <PhotosScreen /> },
-      { path: '/profile', element: <ProfileScreen /> },
-      { path: '/profile/habits', element: <HabitsSettings /> },
+      { path: '/progress/strength', element: <StrengthScreen /> },
+      { path: '/progress/measurements', element: <MeasurementsScreen /> },
+      { path: '/settings', element: <ProfileScreen /> },
+      { path: '/settings/habits', element: <HabitsSettings /> },
+      { path: '/profile', element: <Navigate to="/settings" replace /> },
+      { path: '/profile/habits', element: <Navigate to="/settings/habits" replace /> },
       { path: '*', element: <TodayScreen /> },
     ],
   },

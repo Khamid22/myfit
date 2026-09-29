@@ -53,6 +53,15 @@ export class MyFitDB extends Dexie {
       photos: 'id, date, pose',
       meta: 'key',
     })
+    // v2: shorter starter food name.
+    this.version(2).upgrade((tx) =>
+      tx
+        .table('foods')
+        .toCollection()
+        .modify((f: Food) => {
+          if (f.name === 'Protein shake (1 scoop whey + water)') f.name = 'Protein shake'
+        }),
+    )
   }
 }
 

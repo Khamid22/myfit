@@ -123,7 +123,7 @@ export const FOOD_DATABASE: CatalogFood[] = [
     ['sugar', 'Sugar, 1 tsp', 1, 'serving', 16, 0, 4, 0, 4],
   ]),
   ...rows('snacks', 'estimate', [
-    ['protein-shake', 'Protein shake (1 scoop whey + water)', 1, 'serving', 120, 24, 3, 1.5, 30],
+    ['protein-shake', 'Protein shake', 1, 'serving', 120, 24, 3, 1.5, 30],
     ['protein-bar', 'Protein bar', 1, 'piece', 220, 20, 22, 7, 60],
   ]),
   ...rows('fastfood', 'usda', [

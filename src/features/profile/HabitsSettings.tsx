@@ -1,6 +1,6 @@
-import { ArrowDown, ArrowLeft, ArrowUp, Plus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus } from 'lucide-react'
+import { BackLink } from '../../ui/BackLink'
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
 import { useHabits } from '../../hooks/data'
 import type { HabitDef, HabitKind } from '../../domain/models'
 import { habitRepo } from '../../storage/repositories/habits'
@@ -11,7 +11,6 @@ import { Sheet } from '../../ui/Sheet'
 import { Button, Card, cx, Field, Input, Segmented, Toggle } from '../../ui/primitives'
 
 export function HabitsSettings() {
-  const navigate = useNavigate()
   const habits = useHabits()
   const [edit, setEdit] = useState<HabitDef | 'new' | null>(null)
 
@@ -27,13 +26,11 @@ export function HabitsSettings() {
     <Page
       title="Habits"
       eyebrow={
-        <button onClick={() => navigate(-1)} className="-ml-1 flex items-center gap-1 text-accent-strong">
-          <ArrowLeft size={16} /> Back
-        </button>
+        <BackLink label="Settings" to="/settings" />
       }
     >
       <p className="-mt-2 mb-4 px-1 text-[14px] text-muted">
-        “Avoid” habits are positive: check them when you avoided the thing. Turning a habit off hides it — its history is kept.
+        Tick a habit on Today when you've done it. For “avoid” habits like No Energy Drink, <b className="text-text">long-press</b> it to note that you had one — that's fine, it just keeps your weekly counts honest. Turning a habit off hides it; its history is kept.
       </p>
       <Card className="!px-2 !py-1">
         {habits.map((h, i) => {

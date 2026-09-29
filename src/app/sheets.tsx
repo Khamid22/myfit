@@ -3,10 +3,8 @@ import type { MealSlot } from '../domain/models'
 import type { DayKey } from '../lib/dates'
 import { FoodSheet } from '../features/food/FoodSheet'
 import { WeightSheet } from '../features/today/WeightSheet'
-import { WaterSheet } from '../features/today/WaterSheet'
 import { CardioSheet } from '../features/workout/CardioSheet'
 import { BodyweightSheet } from '../features/workout/BodyweightSheet'
-import { StartWorkoutSheet } from '../features/workout/StartWorkoutSheet'
 import { MeasurementSheet } from '../features/progress/MeasurementSheet'
 import PhotoSheet from '../features/photos/PhotoSheet'
 
@@ -14,10 +12,8 @@ import PhotoSheet from '../features/photos/PhotoSheet'
 export type SheetSpec =
   | { type: 'food'; date: DayKey; meal?: MealSlot }
   | { type: 'weight'; date?: DayKey }
-  | { type: 'water'; date: DayKey }
   | { type: 'cardio'; date: DayKey }
   | { type: 'bodyweight'; exerciseId?: string; date: DayKey }
-  | { type: 'startWorkout' }
   | { type: 'measure' }
   | { type: 'photo' }
 
@@ -46,10 +42,8 @@ export function SheetsProvider({ children }: { children: ReactNode }) {
       {children}
       {props('food') && <FoodSheet open={is('food')} onClose={close} {...props('food')!} />}
       {props('weight') && <WeightSheet open={is('weight')} onClose={close} date={props('weight')!.date} />}
-      {props('water') && <WaterSheet open={is('water')} onClose={close} date={props('water')!.date} />}
       {props('cardio') && <CardioSheet open={is('cardio')} onClose={close} date={props('cardio')!.date} />}
       {props('bodyweight') && <BodyweightSheet open={is('bodyweight')} onClose={close} {...props('bodyweight')!} />}
-      {props('startWorkout') && <StartWorkoutSheet open={is('startWorkout')} onClose={close} />}
       {props('measure') && <MeasurementSheet open={is('measure')} onClose={close} />}
       {props('photo') && <PhotoSheet open={is('photo')} onClose={close} />}
     </Ctx.Provider>

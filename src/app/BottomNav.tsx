@@ -1,4 +1,4 @@
-import { Dumbbell, House, TrendingUp, User, Utensils } from 'lucide-react'
+import { Dumbbell, House, TrendingUp, Utensils } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { cx } from '../ui/primitives'
 
@@ -7,7 +7,6 @@ const TABS = [
   { to: '/food', label: 'Food', icon: Utensils },
   { to: '/workout', label: 'Workout', icon: Dumbbell },
   { to: '/progress', label: 'Progress', icon: TrendingUp },
-  { to: '/profile', label: 'Profile', icon: User },
 ]
 
 export function BottomNav() {

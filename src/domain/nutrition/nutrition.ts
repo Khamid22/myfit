@@ -39,6 +39,7 @@ export function byMeal(logs: FoodLog[]): Record<MealSlot, FoodLog[]> {
 /** Suggest a meal slot from the time of day. */
 export function mealForNow(d = new Date()): MealSlot {
   const h = d.getHours()
+  if (h < 5) return 'snack'
   if (h < 11) return 'breakfast'
   if (h < 16) return 'lunch'
   if (h < 21) return 'dinner'

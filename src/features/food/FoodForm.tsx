@@ -88,10 +88,10 @@ export function FoodForm({
       {allowLogOnly && (
         <div className="flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-3">
           <div>
-            <div className="text-[15px] font-medium">Save to My Foods</div>
-            <div className="text-[12px] text-muted">Reuse it later with one tap</div>
+            <div className="text-[15px] font-medium">Save for next time</div>
+            <div className="text-[12px] text-muted">It will appear at the top of your list</div>
           </div>
-          <Toggle checked={save} onChange={setSave} label="Save to My Foods" />
+          <Toggle checked={save} onChange={setSave} label="Save for next time" />
         </div>
       )}
       <Button

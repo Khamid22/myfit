@@ -13,6 +13,7 @@ import { useFeedback } from '../../ui/feedback'
 import { Page } from '../../ui/Page'
 import { Button, Card, cx, Field, NumberInput, SectionTitle, Segmented } from '../../ui/primitives'
 import { PersonalSheet } from './PersonalSheet'
+import { BackLink } from '../../ui/BackLink'
 
 export function profileEnergyInput(p: ReturnType<typeof useApp>['profile'], currentKg: number) {
   return {
@@ -80,7 +81,7 @@ export function ProfileScreen() {
   }
 
   return (
-    <Page title="Profile">
+    <Page title="Settings" eyebrow={<BackLink label="Today" to="/" />}>
       <div className="space-y-6">
         <Card onClick={() => setEditing(true)}>
           <div className="flex items-center gap-4">
@@ -129,7 +130,7 @@ export function ProfileScreen() {
         <section>
           <SectionTitle>Setup</SectionTitle>
           <Card className="!py-1">
-            <NavRow icon={ListChecks} label="Habits" onClick={() => navigate('/profile/habits')} />
+            <NavRow icon={ListChecks} label="Habits" onClick={() => navigate('/settings/habits')} />
             <NavRow icon={Dumbbell} label="Workout templates" onClick={() => navigate('/workout/templates')} />
             <NavRow icon={BookOpen} label="My Foods & saved meals" onClick={() => navigate('/food/library')} />
           </Card>

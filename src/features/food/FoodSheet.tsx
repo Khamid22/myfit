@@ -1,43 +1,39 @@
-import { ArrowLeft, Globe, Loader2, PenLine, Plus, Search, WifiOff, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Globe, Loader2, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFoods, useMeals } from '../../hooks/data'
-import { MEALS, mealForNow, mealTotals } from '../../domain/nutrition/nutrition'
+import { MEALS, mealForNow, mealTotals, scale, unitLabel } from '../../domain/nutrition/nutrition'
 import type { Food, MealSlot, SavedMeal } from '../../domain/models'
 import { relativeDayLabel, type DayKey } from '../../lib/dates'
 import { int, num } from '../../lib/format'
 import { isOnline, searchCatalog, searchOnline, type FoodCandidate } from '../../services/foodSearch'
 import { foodLogRepo, foodsRepo } from '../../storage/repositories/food'
+import { db } from '../../storage/db'
 import { useFeedback } from '../../ui/feedback'
 import { Sheet } from '../../ui/Sheet'
-import { Chip, cx, Empty, Segmented } from '../../ui/primitives'
-import { candidateSub, FoodRow, foodSub } from './FoodRow'
+import { Chip, cx } from '../../ui/primitives'
 import { FoodForm, type FoodFormValues } from './FoodForm'
 import { FoodQuantity } from './FoodQuantity'
-import { MealEditor } from './MealEditor'
-import { db } from '../../storage/db'
 
-type Tab = 'recent' | 'favorites' | 'mine' | 'meals'
-type View =
-  | { kind: 'browse' }
-  | { kind: 'qty'; food: Food }
-  | { kind: 'candidate'; c: FoodCandidate }
-  | { kind: 'create'; initial?: Partial<Food> }
-  | { kind: 'edit'; food: Food }
-  | { kind: 'meal'; meal?: SavedMeal }
+type View = { kind: 'list' } | { kind: 'amount'; food: Food } | { kind: 'candidate'; c: FoodCandidate } | { kind: 'create'; name?: string }
 
+/**
+ * Add food: one list. Your foods and saved meals first (most recent on top);
+ * typing searches your foods, the built-in database and the internet together.
+ */
 export function FoodSheet({ open, onClose, date, meal: initialMeal }: { open: boolean; onClose: () => void; date: DayKey; meal?: MealSlot }) {
   const foods = useFoods()
   const meals = useMeals()
   const { toast } = useFeedback()
   const [meal, setMeal] = useState<MealSlot>(initialMeal ?? mealForNow())
-  const [tab, setTab] = useState<Tab>('recent')
-  const [view, setView] = useState<View>({ kind: 'browse' })
+  const [pickMeal, setPickMeal] = useState(false)
+  const [view, setView] = useState<View>({ kind: 'list' })
   const [q, setQ] = useState('')
 
   useEffect(() => {
     if (open) {
       setMeal(initialMeal ?? mealForNow())
-      setView({ kind: 'browse' })
+      setPickMeal(false)
+      setView({ kind: 'list' })
       setQ('')
     }
   }, [open, initialMeal])
@@ -48,7 +44,7 @@ export function FoodSheet({ open, onClose, date, meal: initialMeal }: { open: bo
   async function addFood(f: Food, qty: number) {
     const id = await foodLogRepo.logFood(f, qty, date, meal)
     toast(`${f.name} added`, { label: 'Undo', run: () => void db.foodLogs.delete(id) })
-    setView({ kind: 'browse' })
+    onClose()
   }
 
   async function addMeal(m: SavedMeal) {
@@ -61,314 +57,227 @@ export function FoodSheet({ open, onClose, date, meal: initialMeal }: { open: bo
         await db.foodLogs.bulkDelete(after.filter((k) => !before.has(k)) as string[])
       },
     })
+    onClose()
   }
 
-  /** Candidates from the database/online become My Foods when first used. */
+  /** Database / internet foods are saved to your foods the first time you use them. */
   async function saveCandidate(c: FoodCandidate): Promise<Food> {
     const existing = foods.find((f) => f.name === c.name && f.kcal === c.kcal)
     if (existing) return existing
-    return foodsRepo.create({
-      name: c.name,
-      brand: c.brand,
-      servingSize: c.servingSize,
-      unit: c.unit,
-      gramsPerUnit: c.gramsPerUnit,
-      kcal: c.kcal,
-      protein: c.protein,
-      carbs: c.carbs,
-      fat: c.fat,
-      source: c.source,
-      barcode: c.barcode,
-    })
+    const { key: _k, source, ...rest } = c
+    return foodsRepo.create({ ...rest, source })
   }
 
-  async function submitForm(v: FoodFormValues) {
-    const { save, ...data } = v
+  async function submitNew({ save, ...data }: FoodFormValues) {
     if (save) {
-      const f = await foodsRepo.create({ ...data, source: 'user' })
-      await addFood(f, data.servingSize)
+      await addFood(await foodsRepo.create({ ...data, source: 'user' }), data.servingSize)
     } else {
       await foodLogRepo.add({ date, meal, name: data.name, qty: data.servingSize, unit: data.unit, kcal: data.kcal, protein: data.protein, carbs: data.carbs, fat: data.fat })
       toast(`${data.name} added`)
-      setView({ kind: 'browse' })
+      onClose()
     }
   }
 
-  const title =
-    view.kind === 'create' ? 'New food' : view.kind === 'edit' ? 'Edit food' : view.kind === 'meal' ? (view.meal ? 'Edit meal' : 'New meal') : 'Add food'
-
   const back =
-    view.kind !== 'browse' ? (
-      <button onClick={() => setView({ kind: 'browse' })} className="press -ml-2 grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-muted" aria-label="Back">
+    view.kind !== 'list' ? (
+      <button onClick={() => setView({ kind: 'list' })} className="press -ml-2 grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-muted" aria-label="Back">
         <ArrowLeft size={18} />
       </button>
     ) : null
 
   return (
-    <Sheet open={open} onClose={onClose} full title={title} subtitle={`${relativeDayLabel(date)} · ${mealLabel}`} headerRight={back}>
-      {view.kind === 'browse' && (
-        <Browse
-          {...{ foods, meals, byId, tab, setTab, q, setQ, meal, setMeal }}
-          onOpenFood={(food) => setView({ kind: 'qty', food })}
-          onQuickFood={(f) => addFood(f, f.lastQty ?? f.servingSize)}
-          onOpenCandidate={(c) => setView({ kind: 'candidate', c })}
-          onQuickCandidate={async (c) => addFood(await saveCandidate(c), c.servingSize)}
-          onAddMeal={addMeal}
-          onEditMeal={(m) => setView({ kind: 'meal', meal: m })}
-          onCreate={() => setView({ kind: 'create', initial: q ? { name: q } : undefined })}
-          onNewMeal={() => setView({ kind: 'meal' })}
+    <Sheet
+      open={open}
+      onClose={onClose}
+      full={view.kind === 'list' || view.kind === 'create'}
+      headerRight={back}
+      title={view.kind === 'create' ? 'New food' : 'Add food'}
+      subtitle={
+        <button onClick={() => setPickMeal(!pickMeal)} className="inline-flex items-center gap-1 font-medium text-accent-strong">
+          {relativeDayLabel(date)} · {mealLabel} <ChevronDown size={14} />
+        </button>
+      }
+    >
+      {pickMeal && (
+        <div className="mb-3 flex gap-2">
+          {MEALS.map((m) => (
+            <Chip
+              key={m.id}
+              active={m.id === meal}
+              className="flex-1 !px-0"
+              onClick={() => {
+                setMeal(m.id)
+                setPickMeal(false)
+              }}
+            >
+              {m.label}
+            </Chip>
+          ))}
+        </div>
+      )}
+
+      {view.kind === 'list' && (
+        <FoodList
+          foods={foods}
+          meals={meals}
+          byId={byId}
+          q={q}
+          setQ={setQ}
+          onFood={(food) => setView({ kind: 'amount', food })}
+          onMeal={addMeal}
+          onCandidate={(c) => setView({ kind: 'candidate', c })}
+          onCreate={() => setView({ kind: 'create', name: q.trim() || undefined })}
         />
       )}
-      {view.kind === 'qty' && (
-        <FoodQuantity
-          food={byId.get(view.food.id) ?? view.food}
-          mealLabel={mealLabel}
-          onAdd={(qty) => addFood(view.food, qty)}
-          onToggleFavorite={() => foodsRepo.toggleFavorite(view.food.id)}
-          onEdit={() => setView({ kind: 'edit', food: view.food })}
-        />
-      )}
+      {view.kind === 'amount' && <FoodQuantity food={view.food} mealLabel={mealLabel} onAdd={(qty) => addFood(view.food, qty)} />}
       {view.kind === 'candidate' && (
         <FoodQuantity
-          food={{ ...view.c, lastQty: view.c.servingSize }}
+          food={view.c}
           mealLabel={mealLabel}
           onAdd={async (qty) => addFood(await saveCandidate(view.c), qty)}
-          sourceNote={
-            view.c.source === 'openfoodfacts'
-              ? 'From Open Food Facts (community data). Check the label if it matters. Saved to My Foods when added.'
-              : view.c.source === 'usda'
-                ? 'USDA FoodData Central reference values. Saved to My Foods when added.'
-                : 'Typical-recipe estimate — adjust to your portion. Saved to My Foods when added.'
-          }
+          note={view.c.source === 'openfoodfacts' ? 'From Open Food Facts. It will be saved to your foods.' : 'Saved to your foods when added.'}
         />
       )}
-      {view.kind === 'create' && <FoodForm initial={view.initial} submitLabel={`Add to ${mealLabel}`} allowLogOnly onSubmit={submitForm} />}
-      {view.kind === 'edit' && (
-        <FoodForm
-          initial={view.food}
-          submitLabel="Save changes"
-          onSubmit={async ({ save: _s, ...data }) => {
-            await foodsRepo.update(view.food.id, data)
-            setView({ kind: 'qty', food: { ...view.food, ...data } })
-          }}
-        />
-      )}
-      {view.kind === 'meal' && <MealEditor meal={view.meal} foods={foods} onDone={() => { setTab('meals'); setView({ kind: 'browse' }) }} />}
+      {view.kind === 'create' && <FoodForm initial={{ name: view.name }} submitLabel={`Add to ${mealLabel.toLowerCase()}`} allowLogOnly onSubmit={submitNew} />}
     </Sheet>
   )
 }
 
-function Browse({
+type Item =
+  | { kind: 'food'; key: string; food: Food; sort: string }
+  | { kind: 'meal'; key: string; meal: SavedMeal; sort: string }
+
+function FoodList({
   foods,
   meals,
   byId,
-  tab,
-  setTab,
   q,
   setQ,
-  meal,
-  setMeal,
-  onOpenFood,
-  onQuickFood,
-  onOpenCandidate,
-  onQuickCandidate,
-  onAddMeal,
-  onEditMeal,
+  onFood,
+  onMeal,
+  onCandidate,
   onCreate,
-  onNewMeal,
 }: {
   foods: Food[]
   meals: SavedMeal[]
   byId: Map<string, Food>
-  tab: Tab
-  setTab: (t: Tab) => void
   q: string
   setQ: (s: string) => void
-  meal: MealSlot
-  setMeal: (m: MealSlot) => void
-  onOpenFood: (f: Food) => void
-  onQuickFood: (f: Food) => void
-  onOpenCandidate: (c: FoodCandidate) => void
-  onQuickCandidate: (c: FoodCandidate) => void
-  onAddMeal: (m: SavedMeal) => void
-  onEditMeal: (m: SavedMeal) => void
+  onFood: (f: Food) => void
+  onMeal: (m: SavedMeal) => void
+  onCandidate: (c: FoodCandidate) => void
   onCreate: () => void
-  onNewMeal: () => void
 }) {
   const query = q.trim().toLowerCase()
-  const [online, setOnline] = useState<{ q: string; state: 'idle' | 'loading' | 'done' | 'error'; items: FoodCandidate[] }>({ q: '', state: 'idle', items: [] })
-  const abort = useRef<AbortController | null>(null)
+  const online = useOnlineSearch(query)
+  const match = (s: string) => !query || s.toLowerCase().includes(query)
 
-  // Debounced online search once the user pauses typing.
-  useEffect(() => {
-    if (query.length < 3 || !isOnline()) return
-    const t = setTimeout(() => {
-      abort.current?.abort()
-      const ac = new AbortController()
-      abort.current = ac
-      setOnline({ q: query, state: 'loading', items: [] })
-      searchOnline(query, ac.signal)
-        .then((items) => setOnline({ q: query, state: 'done', items }))
-        .catch((e) => (e as Error).name !== 'AbortError' && setOnline({ q: query, state: 'error', items: [] }))
-    }, 600)
-    return () => clearTimeout(t)
-  }, [query])
-
-  const mine = foods.filter((f) => !query || f.name.toLowerCase().includes(query) || f.brand?.toLowerCase().includes(query))
+  // Most recently used first, so your usual foods are always at the top.
+  const mine: Item[] = [
+    ...meals.filter((m) => match(m.name)).map((m) => ({ kind: 'meal' as const, key: m.id, meal: m, sort: m.lastUsedAt ?? m.createdAt })),
+    ...foods.filter((f) => match(f.name)).map((f) => ({ kind: 'food' as const, key: f.id, food: f, sort: f.lastUsedAt ?? '' })),
+  ].sort((a, b) => b.sort.localeCompare(a.sort))
   const catalog = query ? searchCatalog(query).filter((c) => !foods.some((f) => f.name === c.name)) : []
-  const mealMatches = meals.filter((m) => !query || m.name.toLowerCase().includes(query))
-
-  const lists: Record<Tab, Food[]> = {
-    recent: [...foods].filter((f) => f.lastUsedAt).sort((a, b) => b.lastUsedAt!.localeCompare(a.lastUsedAt!)).slice(0, 25),
-    favorites: foods.filter((f) => f.favorite).sort((a, b) => b.useCount - a.useCount),
-    mine: [...foods].sort((a, b) => a.name.localeCompare(b.name)),
-    meals: [],
-  }
 
   return (
     <div className="pb-2">
-      <div className="no-scrollbar -mx-5 mb-3 flex gap-2 overflow-x-auto px-5">
-        {MEALS.map((m) => (
-          <Chip key={m.id} active={m.id === meal} onClick={() => setMeal(m.id)}>
-            {m.label}
-          </Chip>
-        ))}
-      </div>
-      <div className="flex h-12 items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3.5 focus-within:border-accent/60">
-        <Search size={18} className="text-faint" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search foods, database & online"
-          className="h-full min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint"
-          enterKeyHint="search"
-        />
-        {q && (
-          <button onClick={() => setQ('')} aria-label="Clear" className="grid h-7 w-7 place-items-center rounded-full bg-elev text-muted">
-            <X size={14} />
-          </button>
-        )}
-      </div>
-
-      {!query && (
-        <>
-          <Segmented
-            className="mt-3"
-            size="sm"
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: 'recent', label: 'Recent' },
-              { value: 'favorites', label: 'Favorites' },
-              { value: 'mine', label: 'My Foods' },
-              { value: 'meals', label: 'Meals' },
-            ]}
+      <div className="sticky top-0 z-10 -mx-5 bg-surface px-5 pb-2">
+        <div className="flex h-12 items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3.5 focus-within:border-accent/60">
+          <Search size={18} className="text-faint" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search any food"
+            className="h-full min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint"
+            enterKeyHint="search"
           />
-          <div className="mt-2">
-            {tab !== 'meals' &&
-              lists[tab].map((f) => (
-                <FoodRow key={f.id} title={f.name} sub={foodSub(f)} favorite={f.favorite} onOpen={() => onOpenFood(f)} onQuickAdd={() => onQuickFood(f)} />
-              ))}
-            {tab === 'recent' && !lists.recent.length && (
-              <Empty title="Nothing recent yet">Foods you log appear here for one-tap re-adding. Try My Foods or search.</Empty>
-            )}
-            {tab === 'favorites' && !lists.favorites.length && <Empty title="No favorites yet">Tap the star on any food to pin it here.</Empty>}
-            {tab === 'meals' && (
-              <>
-                {meals.map((m) => (
-                  <MealRow key={m.id} meal={m} byId={byId} onAdd={() => onAddMeal(m)} onEdit={() => onEditMeal(m)} />
-                ))}
-                {!meals.length && <Empty title="No saved meals">Combine foods you often eat together — add them with one tap.</Empty>}
-                <ActionRow icon={Plus} label="Create a meal" onClick={onNewMeal} />
-              </>
-            )}
-          </div>
-          {tab !== 'meals' && <ActionRow icon={PenLine} label="Create a new food" onClick={onCreate} />}
-        </>
-      )}
+          {q && (
+            <button onClick={() => setQ('')} aria-label="Clear" className="grid h-7 w-7 place-items-center rounded-full bg-elev text-muted">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
 
-      {query && (
-        <div className="mt-3 space-y-4">
-          {!!mealMatches.length && (
-            <Group title="Saved meals">
-              {mealMatches.map((m) => (
-                <MealRow key={m.id} meal={m} byId={byId} onAdd={() => onAddMeal(m)} onEdit={() => onEditMeal(m)} />
-              ))}
-            </Group>
-          )}
-          {!!mine.length && (
-            <Group title="My Foods">
-              {mine.slice(0, 20).map((f) => (
-                <FoodRow key={f.id} title={f.name} sub={foodSub(f)} favorite={f.favorite} onOpen={() => onOpenFood(f)} onQuickAdd={() => onQuickFood(f)} />
-              ))}
-            </Group>
-          )}
-          {!!catalog.length && (
-            <Group title="Food database">
-              {catalog.map((c) => (
-                <FoodRow key={c.key} title={c.name} sub={candidateSub(c)} badge="db" onOpen={() => onOpenCandidate(c)} onQuickAdd={() => onQuickCandidate(c)} />
-              ))}
-            </Group>
-          )}
-          <Group title="Online · Open Food Facts">
-            {!isOnline() && (
-              <p className="flex items-center gap-2 px-2 py-2 text-[13px] text-muted">
-                <WifiOff size={14} /> Offline — My Foods and the built-in database still work.
-              </p>
-            )}
-            {isOnline() && query.length < 3 && <p className="px-2 py-2 text-[13px] text-muted">Type at least 3 letters to search online.</p>}
-            {online.state === 'loading' && (
-              <p className="flex items-center gap-2 px-2 py-2 text-[13px] text-muted">
-                <Loader2 size={14} className="animate-spin" /> Searching…
-              </p>
-            )}
-            {online.state === 'error' && <p className="px-2 py-2 text-[13px] text-muted">Online search is unavailable right now.</p>}
-            {online.state === 'done' && online.q === query && !online.items.length && <p className="px-2 py-2 text-[13px] text-muted">No online results.</p>}
-            {online.q === query &&
-              online.items.map((c) => (
-                <FoodRow key={c.key} title={c.name} sub={candidateSub(c)} badge="online" onOpen={() => onOpenCandidate(c)} onQuickAdd={() => onQuickCandidate(c)} />
-              ))}
-          </Group>
-          <ActionRow icon={PenLine} label={`Create “${q.trim()}”`} onClick={onCreate} />
+      {mine.map((it) =>
+        it.kind === 'meal' ? (
+          <Row
+            key={it.key}
+            title={it.meal.name}
+            tag="Meal"
+            sub={`${int(mealTotals(it.meal, byId).kcal)} kcal · ${it.meal.items.length} items · tap to add`}
+            onClick={() => onMeal(it.meal)}
+          />
+        ) : (
+          <Row key={it.key} title={it.food.name} sub={foodSub(it.food)} onClick={() => onFood(it.food)} />
+        ),
+      )}
+      {catalog.map((c) => (
+        <Row key={c.key} title={c.name} sub={candidateSub(c)} onClick={() => onCandidate(c)} />
+      ))}
+
+      {query.length >= 3 && (
+        <div className="mt-3">
+          <div className="mb-1 flex items-center gap-1.5 px-2 text-[12px] font-medium text-faint">
+            <Globe size={12} /> From the internet
+            {online.state === 'loading' && <Loader2 size={12} className="animate-spin" />}
+          </div>
+          {online.items.map((c) => (
+            <Row key={c.key} title={c.name} sub={candidateSub(c)} onClick={() => onCandidate(c)} />
+          ))}
+          {online.state === 'done' && !online.items.length && <p className="px-2 py-1 text-[13px] text-faint">No results.</p>}
+          {online.state === 'offline' && <p className="px-2 py-1 text-[13px] text-faint">You're offline — your foods and the built-in list still work.</p>}
+          {online.state === 'error' && <p className="px-2 py-1 text-[13px] text-faint">Not available right now.</p>}
         </div>
       )}
+
+      <button onClick={onCreate} className="press mt-3 w-full rounded-2xl px-2 py-3 text-left text-[15px] font-semibold text-accent-strong active:bg-accent-soft">
+        {query ? `Can't find it? Create “${q.trim()}”` : 'Create a new food'}
+      </button>
     </div>
   )
 }
 
-function MealRow({ meal, byId, onAdd, onEdit }: { meal: SavedMeal; byId: Map<string, Food>; onAdd: () => void; onEdit: () => void }) {
-  const t = mealTotals(meal, byId)
-  const names = meal.items.map((i) => byId.get(i.foodId)?.name).filter(Boolean).join(', ')
+function Row({ title, sub, tag, onClick }: { title: string; sub: string; tag?: string; onClick: () => void }) {
   return (
-    <FoodRow
-      title={meal.name}
-      sub={`${int(t.kcal)} kcal · ${num(t.protein, 0)} g protein · ${names}`}
-      onOpen={onEdit}
-      onQuickAdd={onAdd}
-    />
-  )
-}
-
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center gap-1.5 px-2 text-[12px] font-semibold tracking-[0.06em] text-faint uppercase">
-        {title === 'Online · Open Food Facts' && <Globe size={12} />}
-        {title}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function ActionRow({ icon: Icon, label, onClick }: { icon: typeof Plus; label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={cx('press mt-2 flex min-h-12 w-full items-center gap-3 rounded-2xl px-2 text-left text-[15px] font-semibold text-accent-strong active:bg-accent-soft')}>
-      <span className="grid h-9 w-9 place-items-center rounded-full border border-dashed border-accent/50">
-        <Icon size={17} />
+    <button onClick={onClick} className="press flex min-h-[58px] w-full flex-col justify-center rounded-2xl px-2 text-left active:bg-surface-2">
+      <span className="flex items-center gap-2 text-[16px] font-medium">
+        <span className="truncate">{title}</span>
+        {tag && <span className={cx('shrink-0 rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-semibold text-accent-strong')}>{tag}</span>}
       </span>
-      {label}
+      <span className="tabular truncate text-[13px] text-muted">{sub}</span>
     </button>
   )
 }
 
+function foodSub(f: Food): string {
+  const qty = f.lastQty ?? f.servingSize
+  return `${num(qty)} ${unitLabel(f.unit, qty)} · ${int(scale(f, qty).kcal)} kcal`
+}
+
+function candidateSub(c: FoodCandidate): string {
+  return `${c.brand ? c.brand + ' · ' : ''}${num(c.servingSize)} ${unitLabel(c.unit, c.servingSize)} · ${int(c.kcal)} kcal`
+}
+
+function useOnlineSearch(query: string) {
+  const [s, setS] = useState<{ q: string; state: 'idle' | 'loading' | 'done' | 'error' | 'offline'; items: FoodCandidate[] }>({ q: '', state: 'idle', items: [] })
+  const abort = useRef<AbortController | null>(null)
+  useEffect(() => {
+    if (query.length < 3) return
+    if (!isOnline()) {
+      setS({ q: query, state: 'offline', items: [] })
+      return
+    }
+    const t = setTimeout(() => {
+      abort.current?.abort()
+      const ac = new AbortController()
+      abort.current = ac
+      setS({ q: query, state: 'loading', items: [] })
+      searchOnline(query, ac.signal)
+        .then((items) => setS({ q: query, state: 'done', items: items.slice(0, 15) }))
+        .catch((e) => (e as Error).name !== 'AbortError' && setS({ q: query, state: 'error', items: [] }))
+    }, 500)
+    return () => clearTimeout(t)
+  }, [query])
+  return s.q === query ? s : { q: query, state: 'loading' as const, items: [] }
+}
